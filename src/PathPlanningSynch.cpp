@@ -19,13 +19,10 @@ void PathPlanningSynch::Do(const sgtdv_msgs::ColoredConeArr::ConstPtr &msg)
 {
     if (m_poseReceived)
     {
-        sgtdv_msgs::PathPlanningMsgPtr pathPlanningMsg( new sgtdv_msgs::PathPlanningMsg );
-
         m_poseReceived = false;
-        pathPlanningMsg->carState = *m_lastPose;
-        pathPlanningMsg->coneMap = *m_lastMap;
+        m_pathPlanningMsg.coneMap = msg;
 
-        m_pathPlanning.Do(pathPlanningMsg);
+        m_pathPlanning.Do(m_pathPlanningMsg);
     }
     else
     {
@@ -35,6 +32,6 @@ void PathPlanningSynch::Do(const sgtdv_msgs::ColoredConeArr::ConstPtr &msg)
 
 void PathPlanningSynch::UpdatePose(const sgtdv_msgs::CarState::ConstPtr &msg)
 {
-    m_lastPose = msg;
+    m_pathPlanningMsg.carState = msg;
     m_poseReceived = true;
 }

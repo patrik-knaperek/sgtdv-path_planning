@@ -15,7 +15,7 @@ void PathPlanning::SetPublisher(ros::Publisher publisher)
     m_publisher = publisher;
 }
 
-void PathPlanning::Do(const sgtdv_msgs::PathPlanningMsgPtr &msg)
+void PathPlanning::Do(const PathPlanningMsg &msg)
 {
     //TODO function body
 

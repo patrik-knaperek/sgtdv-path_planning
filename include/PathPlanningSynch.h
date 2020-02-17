@@ -1,9 +1,12 @@
+#pragma once
+
 #include <ros/ros.h>
 #include "../include/PathPlanning.h"
 #include <sgtdv_msgs/ColoredConeArr.h>
 #include <sgtdv_msgs/CarState.h>
-#include <sgtdv_msgs/PathPlanningMsg.h>
 #include <iostream>
+#include "../include/Messages.h"
+
 
 class PathPlanningSynch
 {
@@ -16,8 +19,7 @@ public:
     void UpdatePose(const sgtdv_msgs::CarState::ConstPtr &msg);
 
 private:
-    PathPlanning m_pathPlanning;
-    sgtdv_msgs::CarState::ConstPtr m_lastPose;
-    sgtdv_msgs::ColoredConeArr::ConstPtr m_lastMap;
+    PathPlanning m_pathPlanning;   
+    PathPlanningMsg m_pathPlanningMsg;
     bool m_poseReceived;
 };
