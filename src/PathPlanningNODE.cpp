@@ -1,6 +1,6 @@
 #include <ros/ros.h>
 #include "../include/PathPlanningSynch.h"
-#include <sgtdv_msgs/PathTrackingMsg.h>
+#include <sgtdv_msgs/Point2DArr.h>
 
 int main (int argc, char** argv)
 {
@@ -9,12 +9,15 @@ int main (int argc, char** argv)
     ros::init(argc, argv, "pathPlanning");
     ros::NodeHandle handle;
 
-    ros::Publisher publisher = handle.advertise<sgtdv_msgs::PathTrackingMsg>("pathplanning_trajectory", 1);
+    ros::Publisher publisher = handle.advertise<sgtdv_msgs::Point2DArr>("pathplanning_trajectory", 1);
 
-    synchObj.SetPublisher(publisher);    
+    synchObj.SetPublisher(publisher);
 
     ros::Subscriber mapSub = handle.subscribe("slam_map", 1, &PathPlanningSynch::Do, &synchObj);
     ros::Subscriber poseSub = handle.subscribe("slam_pose", 1, &PathPlanningSynch::UpdatePose, &synchObj);
+
+    //TODO: Set yellow cones side (left or right)
+    //synchObj.YellowOnLeft(true/false);
     
     ros::spin();
 

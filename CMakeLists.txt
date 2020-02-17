@@ -13,12 +13,16 @@ find_package(catkin REQUIRED COMPONENTS
   sgtdv_msgs
 )
 
+find_package(OpenCV REQUIRED)
+
 include_directories(
   ${catkin_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
 )
 
 add_executable(${PROJECT_NAME} src/PathPlanningNODE.cpp src/PathPlanning.cpp src/PathPlanningSynch.cpp)
 
 target_link_libraries(path_planning
   ${catkin_LIBRARIES}
+  ${OpenCV_LIBS}
 )

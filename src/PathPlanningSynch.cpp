@@ -15,7 +15,7 @@ void PathPlanningSynch::SetPublisher(ros::Publisher publisher)
     m_pathPlanning.SetPublisher(publisher);
 }
 
-void PathPlanningSynch::Do(const sgtdv_msgs::ColoredConeArr::ConstPtr &msg)
+void PathPlanningSynch::Do(const sgtdv_msgs::ConeArr::ConstPtr &msg)
 {
     if (m_poseReceived)
     {
@@ -34,4 +34,9 @@ void PathPlanningSynch::UpdatePose(const sgtdv_msgs::CarState::ConstPtr &msg)
 {
     m_pathPlanningMsg.carState = msg;
     m_poseReceived = true;
+}
+
+void PathPlanningSynch::YellowOnLeft(bool value)
+{
+    m_pathPlanning.YellowOnLeft(value);
 }
