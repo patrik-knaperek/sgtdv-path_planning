@@ -17,12 +17,12 @@ void PathPlanning::SetPublisher(ros::Publisher publisher)
 
 void PathPlanning::Do(const PathPlanningMsg &msg)
 {
-    sgtdv_msgs::PathTrackingMsgPtr pathTrackingMsg( new sgtdv_msgs::PathTrackingMsg );
-    pathTrackingMsg->trajectory.points.reserve(MAX_PREDICT_POINTS);
+    sgtdv_msgs::Point2DArrPtr trajectory( new sgtdv_msgs::Point2DArr );
+    trajectory->points.reserve(MAX_PREDICT_POINTS);
 
     SortCones(msg);
-    FindMiddlePoints(pathTrackingMsg->trajectory.points);
-    m_publisher.publish(pathTrackingMsg);
+    FindMiddlePoints(trajectory->points);
+    m_publisher.publish(trajectory);
 }
 
 void PathPlanning::YellowOnLeft(bool value)
