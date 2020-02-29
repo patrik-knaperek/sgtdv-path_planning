@@ -1,3 +1,9 @@
+/*****************************************************/
+//Organization: Stuba Green Team
+//Authors: Pavel Sadloň, Juraj Krasňanský
+/*****************************************************/
+
+
 #include "../include/PathPlanning.h"
 
 PathPlanning::PathPlanning()

@@ -1,3 +1,9 @@
+/*****************************************************/
+//Organization: Stuba Green Team
+//Authors: Juraj Krasňanský
+/*****************************************************/
+
+
 #include <ros/ros.h>
 #include "../include/PathPlanningSynch.h"
 #include <sgtdv_msgs/Point2DArr.h>
