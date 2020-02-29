@@ -1,5 +1,3 @@
-#pragma once
-
 #include <ros/ros.h>
 #include "../include/PathPlanning.h"
 #include <sgtdv_msgs/ConeArr.h>

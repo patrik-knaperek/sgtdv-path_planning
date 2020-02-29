@@ -55,26 +55,29 @@ void PathPlanning::SortCones(const PathPlanningMsg &msg)
 
         if (vehicleConeVec.dot(forwardVec) > 0)     //if cone is in front of the vehicle
         {
+            bool isOnTheLeft = true;
+            cv::Vec2f rightVec;
+
             switch (msg.coneMap->cones[i].color)
             {
                 case 'y':
-                    m_rightDistances.insert(std::pair(Norm(vehicleConeVec), m_rightCones.size())); 
+                    m_rightDistances.insert(std::pair<float, size_t>(Norm(vehicleConeVec), m_rightCones.size())); 
                     m_rightCones.push_back(conePos);
                     break;
                 case 'b':
-                    m_leftDistances.insert(std::pair(Norm(vehicleConeVec), m_leftCones.size())); 
+                    m_leftDistances.insert(std::pair<float, size_t>(Norm(vehicleConeVec), m_leftCones.size())); 
                     m_leftCones.push_back(conePos);
                     break;
                 case 'o':
-                    cv::Vec2f rightVec = Rotate90Clockwise(forwardVec);
-                    bool isOnTheLeft = rightVec.dot(vehicleConeVec) < 0;
+                    rightVec = Rotate90Clockwise(forwardVec);
+                    isOnTheLeft = rightVec.dot(vehicleConeVec) < 0;
                     
-                    isOnTheLeft ? m_leftDistances.insert(std::pair(Norm(vehicleConeVec), m_leftCones.size()))
-                        :  m_rightDistances.insert(std::pair(Norm(vehicleConeVec), m_rightCones.size()));
+                    isOnTheLeft ? m_leftDistances.insert(std::pair<float, size_t>(Norm(vehicleConeVec), m_leftCones.size()))
+                        :  m_rightDistances.insert(std::pair<float, size_t>(Norm(vehicleConeVec), m_rightCones.size()));
                     isOnTheLeft ? m_leftCones.push_back(conePos) : m_rightCones.push_back(conePos);
                     break;
                 default:
-                    std::cerr << "Uknown color of cone\n";
+                    std::cerr << "Unknown color of cone\n";
             }
         }
     }
