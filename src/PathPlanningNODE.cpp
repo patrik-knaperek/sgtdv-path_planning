@@ -25,6 +25,16 @@ int main (int argc, char** argv)
     //TODO: Set yellow cones side (left or right)
     //synchObj.YellowOnLeft(true/false);
     
+
+    if (/*arg from launchfile*/true)
+    {
+        synchObj.SetDiscipline(UNKNOWN_TRACK);
+    }   
+    else
+    {
+        synchObj.SetDiscipline(SKIDPAD);
+    }    
+
     ros::spin();
 
     return 0;
