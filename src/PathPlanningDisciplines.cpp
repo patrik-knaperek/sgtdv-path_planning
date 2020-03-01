@@ -5,6 +5,28 @@
 
 #include "../include/PathPlanningDisciplines.h"
 
+
+PathPlanningDiscipline::PathPlanningDiscipline()
+{
+
+}
+
+PathPlanningDiscipline::~PathPlanningDiscipline()
+{
+
+}
+
+void PathPlanningDiscipline::YellowOnLeft(bool value)
+{
+    m_isYellowOnLeft = value;
+}
+
+
+//////////////////////////////
+//////////////////////////////
+////// UNKNOWN_TRACK /////////
+//////////////////////////////
+
 UnknownTrack::UnknownTrack()
 {
     m_isYellowOnLeft = false;
@@ -15,14 +37,14 @@ UnknownTrack::~UnknownTrack()
 
 }
 
-void UnknownTrack::Do(const PathPlanningMsg &msg)
+sgtdv_msgs::Point2DArrPtr UnknownTrack::Do(const PathPlanningMsg &msg)
 {
     sgtdv_msgs::Point2DArrPtr trajectory( new sgtdv_msgs::Point2DArr );
     trajectory->points.reserve(MAX_PREDICT_POINTS);
 
     SortCones(msg);
     FindMiddlePoints(trajectory->points);
-    m_publisher.publish(trajectory);
+    return trajectory;
 }
 
 bool UnknownTrack::IsLessOnLeft() const
@@ -133,7 +155,9 @@ Skidpad::~Skidpad()
 
 }
 
-void Skidpad::Do(const PathPlanningMsg &msg)
+sgtdv_msgs::Point2DArrPtr Skidpad::Do(const PathPlanningMsg &msg)
 {
+    sgtdv_msgs::Point2DArrPtr trajectory ( new sgtdv_msgs::Point2DArr );
 
+    return trajectory;
 }

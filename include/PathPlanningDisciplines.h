@@ -3,8 +3,8 @@
 //Authors: Juraj Krasňanský
 /*****************************************************/
 
+#pragma once
 
-#include "../include/PathPlanning.h"
 #include <ros/ros.h>
 #include <sgtdv_msgs/PathPlanningMsg.h>
 #include <sgtdv_msgs/PathTrackingMsg.h>
@@ -19,13 +19,33 @@
 
 constexpr size_t MAX_PREDICT_POINTS = 3;
 
-class UnknownTrack : public PathPlanning
+enum Discipline
+{
+    UNKNOWN_TRACK = 0,
+    SKIDPAD
+};
+
+class PathPlanningDiscipline
+{
+public:
+    virtual sgtdv_msgs::Point2DArrPtr Do(const PathPlanningMsg &msg) = 0;  
+    void YellowOnLeft(bool value);
+
+protected:
+    PathPlanningDiscipline();
+    ~PathPlanningDiscipline();
+
+    bool m_isYellowOnLeft;
+};
+
+
+class UnknownTrack : public PathPlanningDiscipline
 {
 public:
     UnknownTrack();
     ~UnknownTrack();
 
-    virtual void Do(const PathPlanningMsg &msg);
+    virtual sgtdv_msgs::Point2DArrPtr Do(const PathPlanningMsg &msg);
     
 private:
    std::vector<cv::Vec2f> m_leftCones;
@@ -48,11 +68,11 @@ private:
 //////////////////////////////
 
 
-class Skidpad : public PathPlanning
+class Skidpad : public PathPlanningDiscipline
 {
 public:
     Skidpad();
     ~Skidpad();
 
-    virtual void Do(const PathPlanningMsg &msg);
+    virtual sgtdv_msgs::Point2DArrPtr Do(const PathPlanningMsg &msg);
 };

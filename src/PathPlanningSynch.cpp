@@ -9,7 +9,6 @@
 PathPlanningSynch::PathPlanningSynch()
 {
     m_poseReceived = false;
-    m_pathPlanning = nullptr;
 }
 
 PathPlanningSynch::~PathPlanningSynch()
@@ -19,7 +18,7 @@ PathPlanningSynch::~PathPlanningSynch()
 
 void PathPlanningSynch::SetPublisher(ros::Publisher publisher)
 {
-    m_pathPlanning->SetPublisher(publisher);
+    m_pathPlanning.SetPublisher(publisher);
 }
 
 void PathPlanningSynch::Do(const sgtdv_msgs::ConeArr::ConstPtr &msg)
@@ -29,7 +28,7 @@ void PathPlanningSynch::Do(const sgtdv_msgs::ConeArr::ConstPtr &msg)
         m_poseReceived = false;
         m_pathPlanningMsg.coneMap = msg;
 
-        m_pathPlanning->Do(m_pathPlanningMsg);
+        m_pathPlanning.Do(m_pathPlanningMsg);
     }
     else
     {
@@ -45,17 +44,10 @@ void PathPlanningSynch::UpdatePose(const sgtdv_msgs::CarState::ConstPtr &msg)
 
 void PathPlanningSynch::YellowOnLeft(bool value)
 {
-    m_pathPlanning->YellowOnLeft(value);
+    m_pathPlanning.YellowOnLeft(value);
 }
 
-void PathPlanningSynch::SetDiscipline(PathPlanningDiscipline discipline)
+void PathPlanningSynch::SetDiscipline(Discipline discipline)
 {
-    switch (discipline)
-    {
-        case UNKNOWN_TRACK: m_pathPlanning = new UnknownTrack; break;
-        case SKIDPAD: m_pathPlanning = new Skidpad; break;
-        default: m_pathPlanning = nullptr;
-    }
-
-    if (!m_pathPlanning) ros::shutdown();
+    m_pathPlanning.SetDiscipline(discipline);
 }

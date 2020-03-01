@@ -1,6 +1,13 @@
+/*****************************************************/
+//Organization: Stuba Green Team
+//Authors: Juraj Krasňanský
+/*****************************************************/
+
+
 #pragma once
 
-#include "../include/Messages.h"
+#include "Messages.h"
+#include "PathPlanningDisciplines.h"
 #include "opencv2/core/core.hpp"
 #include <ros/ros.h>
 
@@ -8,14 +15,15 @@
 class PathPlanning
 {
 public:
-    void SetPublisher(ros::Publisher publisher);
-    virtual void Do(const PathPlanningMsg &msg) = 0;  
-    void YellowOnLeft(bool value);
-
-protected:
     PathPlanning();
     ~PathPlanning();
 
+    void SetPublisher(ros::Publisher publisher);
+    void Do(const PathPlanningMsg &msg);  
+    void YellowOnLeft(bool value);
+    void SetDiscipline(Discipline discipline);
+
+private:    
     ros::Publisher m_publisher;
-    bool m_isYellowOnLeft;
+    PathPlanningDiscipline *m_pathPlanningDiscipline = nullptr;
 };

@@ -7,6 +7,7 @@
 #include <ros/ros.h>
 #include "../include/PathPlanningSynch.h"
 #include <sgtdv_msgs/Point2DArr.h>
+#include "../include/PathPlanningDisciplines.h"
 
 int main (int argc, char** argv)
 {
@@ -20,11 +21,7 @@ int main (int argc, char** argv)
     synchObj.SetPublisher(publisher);
 
     ros::Subscriber mapSub = handle.subscribe("slam_map", 1, &PathPlanningSynch::Do, &synchObj);
-    ros::Subscriber poseSub = handle.subscribe("slam_pose", 1, &PathPlanningSynch::UpdatePose, &synchObj);
-
-    //TODO: Set yellow cones side (left or right)
-    //synchObj.YellowOnLeft(true/false);
-    
+    ros::Subscriber poseSub = handle.subscribe("slam_pose", 1, &PathPlanningSynch::UpdatePose, &synchObj);    
 
     if (/*arg from launchfile*/true)
     {
@@ -33,7 +30,10 @@ int main (int argc, char** argv)
     else
     {
         synchObj.SetDiscipline(SKIDPAD);
-    }    
+    }
+
+    //TODO: Set yellow cones side (left or right)
+    //synchObj.YellowOnLeft(true/false);
 
     ros::spin();
 

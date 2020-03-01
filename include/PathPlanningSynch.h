@@ -13,12 +13,6 @@
 #include "../include/Messages.h"
 
 
-enum PathPlanningDiscipline
-{
-    UNKNOWN_TRACK = 0,
-    SKIDPAD
-};
-
 class PathPlanningSynch
 {
 public:
@@ -29,10 +23,10 @@ public:
     void Do(const sgtdv_msgs::ConeArr::ConstPtr &msg);
     void UpdatePose(const sgtdv_msgs::CarState::ConstPtr &msg);
     void YellowOnLeft(bool value);
-    void SetDiscipline(PathPlanningDiscipline discipline);
+    void SetDiscipline(Discipline discipline);
 
 private:
-    PathPlanning *m_pathPlanning;   
+    PathPlanning m_pathPlanning;   
     PathPlanningMsg m_pathPlanningMsg;
     bool m_poseReceived;
 };
