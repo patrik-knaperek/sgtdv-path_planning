@@ -126,13 +126,18 @@ void UnknownTrack::FindMiddlePoints(std::vector<sgtdv_msgs::Point2D> &points)
 
     for (size_t i = 0; i < MAX_PREDICT_POINTS; i++)
     {
-        if (m_leftDistances.size() <= i && m_rightDistances.size() <= i) continue;
+        if (m_leftDistances.size() <= i && m_rightDistances.size() <= i) 
+            continue;
         sgtdv_msgs::Point2D temp;
         cv::Vec2f newPos = ((m_leftCones[leftIt->second] + m_rightCones[rightIt->second]) / 2.f);
 
         temp.x = newPos[0];
         temp.y = newPos[1];
+        if (leftIt == m_leftDistances.end())
+            break;
         leftIt++;
+        if (rightIt == m_rightDistances.end())
+            break;
         rightIt++;
         points.push_back(temp);
     }
