@@ -36,9 +36,9 @@ void PathPlanningSynch::Do(const sgtdv_msgs::ConeArr::ConstPtr &msg)
     }    
 }
 
-void PathPlanningSynch::UpdatePose(const sgtdv_msgs::CarState::ConstPtr &msg)
+void PathPlanningSynch::UpdatePose(const sgtdv_msgs::CarPose::ConstPtr &msg)
 {
-    m_pathPlanningMsg.carState = msg;
+    m_pathPlanningMsg.carPose = msg;
     m_poseReceived = true;
 }
 

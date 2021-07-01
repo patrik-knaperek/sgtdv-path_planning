@@ -66,8 +66,8 @@ void UnknownTrack::SortCones(const PathPlanningMsg &msg)
     for (size_t i = 0; i < msg.coneMap->cones.size(); i++)
     {
         cv::Vec2f conePos(msg.coneMap->cones[i].coords.x, msg.coneMap->cones[i].coords.y);
-        cv::Vec2f vehiclePos(msg.carState->position.x, msg.carState->position.y);
-        cv::Vec2f forwardVec(cosf(deg2rad(msg.carState->yaw)), sinf(deg2rad(msg.carState->yaw)));
+        cv::Vec2f vehiclePos(msg.carPose->position.x, msg.carPose->position.y);
+        cv::Vec2f forwardVec(cosf(deg2rad(msg.carPose->yaw)), sinf(deg2rad(msg.carPose->yaw)));
         cv::Vec2f vehicleConeVec(conePos - vehiclePos);
 
         if (vehicleConeVec.dot(forwardVec) > 0)     //if cone is in front of the vehicle
