@@ -52,7 +52,7 @@ bool UnknownTrack::IsLessOnLeft() const
     return m_leftCones.size() < m_rightCones.size();
 }
 
-float UnknownTrack::Norm(const cv::Vec2f &point) const
+float UnknownTrack::Norm(const Eigen::Vector2f &point) const
 {
     return sqrt(point.dot(point));
 }
@@ -65,15 +65,15 @@ void UnknownTrack::SortCones(const PathPlanningMsg &msg)
 
     for (size_t i = 0; i < msg.coneMap->cones.size(); i++)
     {
-        cv::Vec2f conePos(msg.coneMap->cones[i].coords.x, msg.coneMap->cones[i].coords.y);
-        cv::Vec2f vehiclePos(msg.carPose->position.x, msg.carPose->position.y);
-        cv::Vec2f forwardVec(cosf(deg2rad(msg.carPose->yaw)), sinf(deg2rad(msg.carPose->yaw)));
-        cv::Vec2f vehicleConeVec(conePos - vehiclePos);
+        Eigen::Vector2f conePos(msg.coneMap->cones[i].coords.x, msg.coneMap->cones[i].coords.y);
+        Eigen::Vector2f vehiclePos(msg.carPose->position.x, msg.carPose->position.y);
+        Eigen::Vector2f forwardVec(cosf(deg2rad(msg.carPose->yaw)), sinf(deg2rad(msg.carPose->yaw)));
+        Eigen::Vector2f vehicleConeVec(conePos - vehiclePos);
 
         if (vehicleConeVec.dot(forwardVec) > 0)     //if cone is in front of the vehicle
         {
             bool isOnTheLeft = true;
-            cv::Vec2f rightVec;
+            Eigen::Vector2f rightVec;
 
             switch (msg.coneMap->cones[i].color)
             {
@@ -106,9 +106,9 @@ void UnknownTrack::SortCones(const PathPlanningMsg &msg)
     }
 }
 
-cv::Vec2f UnknownTrack::Rotate90Clockwise(const cv::Vec2f &point) const
+Eigen::Vector2f UnknownTrack::Rotate90Clockwise(const Eigen::Vector2f &point) const
 {
-    return cv::Vec2f(point[1], -point[0]);
+    return Eigen::Vector2f(point[1], -point[0]);
 }
 
 void UnknownTrack::Clear()
@@ -129,7 +129,7 @@ void UnknownTrack::FindMiddlePoints(std::vector<sgtdv_msgs::Point2D> &points)
         if (m_leftDistances.size() <= i && m_rightDistances.size() <= i) 
             continue;
         sgtdv_msgs::Point2D temp;
-        cv::Vec2f newPos = ((m_leftCones[leftIt->second] + m_rightCones[rightIt->second]) / 2.f);
+        Eigen::Vector2f newPos = ((m_leftCones[leftIt->second] + m_rightCones[rightIt->second]) / 2.f);
 
         temp.x = newPos[0];
         temp.y = newPos[1];

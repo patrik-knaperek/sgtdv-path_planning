@@ -11,6 +11,9 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
   sgtdv_msgs
+  roslib
+  tf
+  tf_conversions
 )
 
 find_package(OpenCV REQUIRED)
@@ -24,7 +27,14 @@ include_directories(
   ${OpenCV_INCLUDE_DIRS}
 )
 
-add_executable(${PROJECT_NAME} src/PathPlanningNODE.cpp src/PathPlanning.cpp src/PathPlanningSynch.cpp src/PathPlanningDisciplines.cpp)
+add_executable(
+  ${PROJECT_NAME} 
+  src/PathPlanningNODE.cpp 
+  src/PathPlanning.cpp 
+  src/PathPlanningSynch.cpp 
+  src/PathPlanningDisciplines.cpp
+  src/RRTStar.cpp
+)
 
 target_link_libraries(path_planning
   ${catkin_LIBRARIES}
