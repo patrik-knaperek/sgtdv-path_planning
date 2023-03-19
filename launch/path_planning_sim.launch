@@ -1,0 +1,15 @@
+<launch>
+  <node pkg="slam_sim_interface" type="slam_sim_interface" name="slamSimInterface" output="screen"/>
+  <node
+    pkg="path_planning"
+    type="path_planning"
+    name="pathPlanning" 
+    output="screen"
+  />
+  <node
+    pkg="rviz"
+    type="rviz"
+    name="rviz" 
+    args="-d $(find path_planning)/rviz/config.rviz"
+  />
+</launch> 
