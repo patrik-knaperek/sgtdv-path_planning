@@ -4,10 +4,7 @@
 /*****************************************************/
 
 
-//#include <ros/ros.h>
 #include "../include/PathPlanningSynch.h"
-#include <visualization_msgs/Marker.h>
-#include <sgtdv_msgs/Point2DArr.h>
 //#include "../include/PathPlanningDisciplines.h"
 
 int main (int argc, char** argv)
@@ -17,13 +14,13 @@ int main (int argc, char** argv)
     ros::init(argc, argv, "pathPlanning");
     ros::NodeHandle handle;
 
-    //ros::Publisher publisher = handle.advertise<sgtdv_msgs::Point2DArr>("pathplanning_trajectory", 1);
-    ros::Publisher publisherTrajectory = handle.advertise<visualization_msgs::MarkerArray>("pathplanning_trajectory", 10);
+    ros::Publisher publisherTrajectory = handle.advertise<sgtdv_msgs::Point2DArr>("pathplanning_trajectory", 1);
+    ros::Publisher publisherTrajectoryVisualize = handle.advertise<visualization_msgs::MarkerArray>("pathplanning_trajectory_visualize", 10);
     ros::Publisher publisherInterpolatedCones = handle.advertise<visualization_msgs::MarkerArray>("pathplanning_interpolated_cones", 10);
 
-    synchObj.SetPublisher(publisherTrajectory, publisherInterpolatedCones);
+    synchObj.SetPublisher(publisherTrajectory, publisherTrajectoryVisualize, publisherInterpolatedCones);
 
-    ros::Subscriber mapSub = handle.subscribe("slam_map", 1, &PathPlanningSynch::Do, &synchObj);
+    ros::Subscriber mapSub = handle.subscribe("slam_map", 1, &PathPlanningSynch::UpdateMap, &synchObj);
     ros::Subscriber poseSub = handle.subscribe("slam_pose", 1, &PathPlanningSynch::UpdatePose, &synchObj);    
 
     //if (/*arg from launchfile*/true)

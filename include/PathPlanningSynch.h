@@ -1,6 +1,6 @@
 /*****************************************************/
 //Organization: Stuba Green Team
-//Authors: Juraj Krasňanský, Samuel Mazúr
+//Authors: Juraj Krasňanský, Samuel Mazúr, Patrik Knaperek
 /*****************************************************/
 
 #pragma once
@@ -25,8 +25,9 @@ public:
     PathPlanningSynch();
     ~PathPlanningSynch() = default;
 
-    void SetPublisher(const ros::Publisher &trajectoryPub, const ros::Publisher &interpolatedConesPub);
-    void Do(const sgtdv_msgs::ConeArr::ConstPtr &msg);
+    void SetPublisher(const ros::Publisher &trajectoryPub, const ros::Publisher &trajectoryVisPub, const ros::Publisher &interpolatedConesPub);
+    void Do();
+    void UpdateMap(const sgtdv_msgs::ConeArr::ConstPtr &msg);
     void UpdatePose(const sgtdv_msgs::CarPose::ConstPtr &msg);
     void YellowOnLeft(bool value);
     //void SetDiscipline(Discipline discipline);
@@ -34,5 +35,6 @@ public:
 private:
     PathPlanning m_pathPlanning;   
     PathPlanningMsg m_pathPlanningMsg;
+    bool m_mapReceived;
     bool m_poseReceived;
 };

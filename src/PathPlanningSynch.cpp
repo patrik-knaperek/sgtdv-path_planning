@@ -6,8 +6,9 @@
 
 #include "../include/PathPlanningSynch.h"
 
-PathPlanningSynch::PathPlanningSynch() :
-    m_poseReceived(false)
+PathPlanningSynch::PathPlanningSynch()
+    : m_mapReceived(false)
+    , m_poseReceived(false)
 {
 
 }
@@ -18,28 +19,40 @@ PathPlanningSynch::PathPlanningSynch() :
  * @param interpolatedConesPub
  */
 //TODO: replace multiple arguments with single one
-void PathPlanningSynch::SetPublisher(const ros::Publisher &trajectoryPub, const ros::Publisher &interpolatedConesPub)
+void PathPlanningSynch::SetPublisher(const ros::Publisher &trajectoryPub, const ros::Publisher &trajectoryVisPub, const ros::Publisher &interpolatedConesPub)
 {
-    m_pathPlanning.SetPublisher(trajectoryPub, interpolatedConesPub);
+    m_pathPlanning.SetPublisher(trajectoryPub, trajectoryVisPub, interpolatedConesPub);
 }
 
 /**
  * @brief Main function in class.
  * @param incomingROSMsg
  */
-void PathPlanningSynch::Do(const sgtdv_msgs::ConeArr::ConstPtr &msg)
+void PathPlanningSynch::Do()
 {
-    if (m_poseReceived)
+    if (m_poseReceived && m_mapReceived)
     {
+        m_mapReceived = false;
         m_poseReceived = false;
-        m_pathPlanningMsg.coneMap = msg;
-
+        ROS_INFO("Starting trajectory planning");
         m_pathPlanning.Do(m_pathPlanningMsg);
     }
     else
     {
-        std::cerr << "PathPlanningSynch - Do: Map received before pose\n";
+        //ROS_ERROR("PathPlanningSynch - Do: PathPlanning message not ready\n");
     }    
+}
+
+/**
+ * @brief Read SLAM map message.
+ * @param SLAMMapMsg
+ */
+void PathPlanningSynch::UpdateMap(const sgtdv_msgs::ConeArr::ConstPtr &msg)
+{
+    ROS_INFO("Map received");
+    m_pathPlanningMsg.coneMap = msg;
+    m_mapReceived = true;
+    Do();
 }
 
 /**
@@ -48,8 +61,10 @@ void PathPlanningSynch::Do(const sgtdv_msgs::ConeArr::ConstPtr &msg)
  */
 void PathPlanningSynch::UpdatePose(const sgtdv_msgs::CarPose::ConstPtr &msg)
 {
+    ROS_INFO_ONCE("Pose received");
     m_pathPlanningMsg.carPose = msg;
     m_poseReceived = true;
+    Do();
 }
 
 /**
