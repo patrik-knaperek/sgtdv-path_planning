@@ -25,7 +25,11 @@ public:
     PathPlanningSynch();
     ~PathPlanningSynch() = default;
 
-    void SetPublisher(const ros::Publisher &trajectoryPub, const ros::Publisher &trajectoryVisPub, const ros::Publisher &interpolatedConesPub);
+    void SetPublisher(const ros::Publisher &trajectoryPub
+                    , const ros::Publisher &trajectoryVisPub
+                    , const ros::Publisher &interpolatedConesPub
+                    // , const ros::Publisher &treeVisPub
+                    );
     void Do();
     void UpdateMap(const sgtdv_msgs::ConeArr::ConstPtr &msg);
     void UpdatePose(const sgtdv_msgs::CarPose::ConstPtr &msg);

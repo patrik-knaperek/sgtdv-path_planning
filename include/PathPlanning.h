@@ -38,7 +38,11 @@ public:
     PathPlanning();
     ~PathPlanning() = default;
 
-    void SetPublisher(const ros::Publisher &trajectoryPub, const ros::Publisher &trajectoryVisPub, const ros::Publisher &interpolatedConesPub);
+    void SetPublisher(const ros::Publisher &trajectoryPub
+                    , const ros::Publisher &trajectoryVisPub
+                    , const ros::Publisher &interpolatedConesPub
+                    // , const ros::Publisher &treeVisPub
+                    );
     void Do(const PathPlanningMsg &msg);  
     void YellowOnLeft(bool value);
     //void SetDiscipline(Discipline discipline);
@@ -51,14 +55,14 @@ private:
     visualization_msgs::MarkerArray VisualizeInterpolatedCones() const;
     visualization_msgs::MarkerArray VisualizeRRTPoints() const;
 
-    RRTStar m_rrtStar1;
+    RRTStar m_rrtStar;
 	RRTStar m_rrtStar2;
 	RRTStar m_rrtStar3;
 
 	float m_timeravg;
 	int m_timeravgcount;
 
-    ros::Publisher m_trajectoryPub, m_trajectoryVisPub, m_interpolatedConesPub;
+    ros::Publisher m_trajectoryPub, m_trajectoryVisPub, m_interpolatedConesPub/*, m_treeVisPub*/;
     bool m_isYellowOnLeft;
 	bool m_once;
 

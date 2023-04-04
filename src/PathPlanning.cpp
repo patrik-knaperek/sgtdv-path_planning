@@ -18,12 +18,16 @@ PathPlanning::PathPlanning()
  * @param trajectoryPub
  * @param interpolatedConesPub
  */
-//TODO: replace multiple arguments with single one
-void PathPlanning::SetPublisher(const ros::Publisher &trajectoryPub, const ros::Publisher &trajectoryVisPub, const ros::Publisher &interpolatedConesPub)
+void PathPlanning::SetPublisher(const ros::Publisher &trajectoryPub
+								, const ros::Publisher &trajectoryVisPub
+								, const ros::Publisher &interpolatedConesPub
+								// , const ros::Publisher &treeVisPub
+								)
 {
     m_trajectoryPub = trajectoryPub;
 	m_trajectoryVisPub = trajectoryVisPub;
     m_interpolatedConesPub = interpolatedConesPub;
+	// m_treeVisPub = treeVisPub;
 }
 
 /*void PathPlanning::SetDiscipline(Discipline discipline)
@@ -57,16 +61,12 @@ void PathPlanning::Do(const PathPlanningMsg &msg)
     //m_publisher.publish(m_pathPlanningDiscipline->Do(msg));
 
     SortCones(msg);
-	//ROS_INFO("SortCones(msg) completed");
-    m_leftConesInterpolated = LinearInterpolation(m_leftCones);
-	//ROS_INFO("LinearInterpolation(m_leftCones) completed");
-    m_rightConesInterpolated = LinearInterpolation(m_rightCones);
-	//ROS_INFO("LinearInterpolation(m_rightCones) completed");
+	m_leftConesInterpolated = LinearInterpolation(m_leftCones);
+	m_rightConesInterpolated = LinearInterpolation(m_rightCones);
 	m_interpolatedConesPub.publish(VisualizeInterpolatedCones());
 	
 	if(FULL_MAP)
 	{
-		ROS_INFO("Starting RRTRun algorithm");
 		RRTRun();
 		m_trajectoryVisPub.publish(VisualizeRRTPoints());
 	}
@@ -84,41 +84,26 @@ void PathPlanning::RRTRun()
 	m_once = false;
 	m_timeravg = 0;
 	m_timeravgcount = 0;
-	//ROS_INFO_STREAM("first left: " << m_leftConesInterpolated[0]);
-	//ROS_INFO_STREAM("first right: " << m_rightConesInterpolated[0]);
-	cv::Vec2f startPos1 = ((m_leftConesInterpolated[0] + m_rightConesInterpolated[0]) / 2.f);
-
-	short cone_iter = m_leftConesInterpolated.size()/3.f;
-	cv::Vec2f startPos2 = ((m_leftConesInterpolated[cone_iter] + m_rightConesInterpolated[cone_iter]) / 2.f);
-
-	short cone_iter2 = 2* m_leftConesInterpolated.size()/3.f;
-	cv::Vec2f startPos3 = ((m_leftConesInterpolated[cone_iter2] + m_rightConesInterpolated[cone_iter2]) / 2.f);
-
-	cv::Vec2f endPos = ((m_leftConesInterpolated[1] + m_rightConesInterpolated[1]) / 2.f);
-
-	m_rrtStar1.Init(m_leftConesInterpolated, m_rightConesInterpolated,0, cone_iter+1, startPos1, startPos2);
-	m_rrtStar2.Init(m_leftConesInterpolated, m_rightConesInterpolated,cone_iter-1, cone_iter2+1, startPos2, startPos3);
-	m_rrtStar3.Init(m_leftConesInterpolated, m_rightConesInterpolated,cone_iter2-1, m_leftConesInterpolated.size(), startPos3, endPos);
+	
+	cv::Vec2f startPos = ((m_leftConesInterpolated[0] + m_rightConesInterpolated[0]) / 2.f);
+	short cone_iter = m_leftConesInterpolated.size();
+	cv::Vec2f endPos = ((m_leftConesInterpolated[m_leftConesInterpolated.size()-1] + m_rightConesInterpolated[m_rightConesInterpolated.size()-1]) / 2.f);
+	
+	m_rrtStar.Init(m_leftConesInterpolated, m_rightConesInterpolated,0, cone_iter, startPos, endPos);
 	}
-	ROS_INFO("RRT Star initialization complete");
-
+	
 	//execution timer
 	auto start = std::chrono::high_resolution_clock::now();
 	
-	m_rrtStar1.Do();
-	//ROS_INFO("RRT Star 1 completed with %ld nodes", m_rrtStar1.GetPath().size());
-	m_rrtStar2.Do();
-	//ROS_INFO("RRT Star 2 completed with %ld nodes", m_rrtStar2.GetPath().size());
-	m_rrtStar3.Do();
-	//ROS_INFO("RRT Star 3 completed with %ld nodes", m_rrtStar3.GetPath().size());
-
+	m_rrtStar.Do();
+	
 	auto stop = std::chrono::high_resolution_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
 	m_timeravg += duration.count()/ 1000000.f;
 	m_timeravgcount +=1;
-	ROS_INFO("\nRRT Timer: %f s\n", m_timeravg/m_timeravgcount);
-	ROS_INFO("Path jumps: %ld", m_rrtStar1.GetPath().size() + m_rrtStar2.GetPath().size() + m_rrtStar3.GetPath().size());
-	ROS_INFO("Total nodes: %ld",m_rrtStar1.GetPath().size() + m_rrtStar2.GetPath().size() + m_rrtStar3.GetPath().size());
+	ROS_INFO("\nRRT Timer: %f s", m_timeravg/m_timeravgcount);
+	ROS_INFO("Path jumps: %ld", m_rrtStar.GetPath().size());
+	ROS_INFO("Total nodes: %ld\n",m_rrtStar.GetNodes().size());
 	
 }
 
@@ -132,134 +117,82 @@ visualization_msgs::MarkerArray PathPlanning::VisualizeRRTPoints() const
 	geometry_msgs::Point pointVis;
 	sgtdv_msgs::Point2DArr trajectory;
 	sgtdv_msgs::Point2D point;
+	// visualization_msgs::MarkerArray treeVis;
 
-	visualization_msgs::Marker tree1;
-    tree1.type = visualization_msgs::Marker::LINE_STRIP;
-    tree1.header.frame_id = "map";
-	tree1.id = 0;
-	tree1.ns = "trajectory1";
-    tree1.scale.x = 0.2;
-    tree1.scale.y = 0.2;
-    tree1.color.r = 0.0f;
-	tree1.color.g = 1.0f;
- 	tree1.color.b = 0.0f;
-    tree1.color.a = 1.0;
-	tree1.pose.orientation.w = 1.0;
+	visualization_msgs::Marker tree;
+    tree.type = visualization_msgs::Marker::LINE_STRIP;
+    tree.header.frame_id = "map";
+	tree.id = 0;
+	tree.ns = "trajectory";
+    tree.scale.x = 0.2;
+    tree.scale.y = 0.2;
+    tree.color.r = 1.0f;
+	tree.color.g = 0.0f;
+ 	tree.color.b = 0.0f;
+    tree.color.a = 1.0;
+	tree.pose.orientation.w = 1.0;
     
-	for(const auto &pathIt : m_rrtStar1.GetPath())
+	for(const auto &pathIt : m_rrtStar.GetPath())
 	{
 		point.x = pointVis.x = pathIt[0];
 		point.y = pointVis.y = pathIt[1];
-		tree1.points.push_back(pointVis);
+		tree.points.push_back(pointVis);
 		trajectory.points.push_back(point);
 	}
 
-	visualization_msgs::Marker tree2;
-    tree2.type = visualization_msgs::Marker::LINE_STRIP;
-    tree2.header.frame_id = "map";
-	tree2.id = 1;
-	tree2.ns = "trajectory2";
-    tree2.scale.x = 0.2;
-    tree2.scale.y = 0.2;
-    tree2.color.r = 1.0f;
-	tree2.color.g = 0.0f;
- 	tree2.color.b = 0.0f;
-    tree2.color.a = 1.0;
-	tree2.pose.orientation.w = 1.0;
+	visualization_msgs::Marker points;
+    points.type = visualization_msgs::Marker::POINTS;
+    points.header.frame_id = "map";
+	points.id = 3;
+	points.ns = "nodes";
+    points.scale.x = 0.15;
+    points.scale.y = 0.15;
+    points.color.r = 0.0f;
+	points.color.g = 1.0f;
+ 	points.color.b = 0.0f;
+    points.color.a = 1.0;
 
-	for(const auto &pathIt : m_rrtStar2.GetPath())
+	// visualization_msgs::Marker edge;
+    // edge.type = visualization_msgs::Marker::ARROW;
+    // edge.header.frame_id = "map";
+	// edge.scale.x = 0.15;
+    // edge.scale.y = 0.15;
+    // edge.color.r = 0.0f;
+	// edge.color.g = 1.0f;
+ 	// edge.color.b = 0.0f;
+    // edge.color.a = 0.6;
+	// edge.pose.orientation.x = edge.pose.orientation.y = edge.pose.orientation.z = 0.0;
+	// edge.pose.orientation.w = 1.0;
+	// edge.points.resize(2);
+	// int edgeId = 0;
+
+
+	for(const auto &node : m_rrtStar.GetNodes())
 	{
-		point.x = pointVis.x = pathIt[0];
-		point.y = pointVis.y = pathIt[1];
-		tree2.points.push_back(pointVis);
-		trajectory.points.push_back(point);
-	}
-
-	visualization_msgs::Marker tree3;
-    tree3.type = visualization_msgs::Marker::LINE_STRIP;
-    tree3.header.frame_id = "map";
-	tree3.id = 2;
-	tree3.ns = "trajectory3";
-    tree3.scale.x = 0.2;
-    tree3.scale.y = 0.2;
-    tree3.color.r = 1.0f;
-	tree3.color.g = 0.0f;
- 	tree3.color.b = 1.0f;
-    tree3.color.a = 1.0;
-	tree3.pose.orientation.w = 1.0;
-
-	for(const auto &pathIt : m_rrtStar3.GetPath())
-	{
-		point.x = pointVis.x = pathIt[0];
-		point.y = pointVis.y = pathIt[1];
-		tree3.points.push_back(pointVis);
-		trajectory.points.push_back(point);
-	}
-
-
-	visualization_msgs::Marker points1;
-    points1.type = visualization_msgs::Marker::POINTS;
-    points1.header.frame_id = "map";
-	points1.id = 3;
-	points1.ns = "nodes1";
-    points1.scale.x = 0.15;
-    points1.scale.y = 0.15;
-    points1.color.r = 0.0f;
-	points1.color.g = 1.0f;
- 	points1.color.b = 0.0f;
-    points1.color.a = 1.0;
-
-	visualization_msgs::Marker points2;
-    points2.type = visualization_msgs::Marker::POINTS;
-    points2.header.frame_id = "map";
-	points2.id = 4;
-	points2.ns = "nodes2";
-    points2.scale.x = 0.15;
-    points2.scale.y = 0.15;
-    points2.color.r = 1.0f;
-	points2.color.g = 0.0f;
- 	points2.color.b = 0.0f;
-    points2.color.a = 1.0;
-
-	visualization_msgs::Marker points3;
-    points3.type = visualization_msgs::Marker::POINTS;
-    points3.header.frame_id = "map";
-	points3.id = 5;
-	points3.ns = "nodes3";
-    points3.scale.x = 0.15;
-    points3.scale.y = 0.15;
-    points3.color.r = 1.0f;
-	points3.color.g = 0.0f;
- 	points3.color.b = 1.0f;
-    points3.color.a = 1.0;
-
-	for(const auto &node : m_rrtStar1.GetNodes())
-	{
+		// if (node->parent != nullptr)
+		// {
+		// 	pointVis.x = node->parent->position[0];
+		// 	pointVis.y = node->parent->position[1];
+		// 	edge.points[0] = pointVis;
+		// }
+		
 		pointVis.x = node->position[0];
 		pointVis.y = node->position[1];
-		points1.points.push_back(pointVis);
+		points.points.push_back(pointVis);
+		
+		// if (node->parent != nullptr)
+		// {
+		// 	edge.points[1] = pointVis;
+		// 	edge.id = edgeId++;
+		// 	treeVis.markers.push_back(edge);
+		// }
 	}
-	for(const auto &node : m_rrtStar2.GetNodes())
-	{
-		pointVis.x = node->position[0];
-		pointVis.y = node->position[1];
-		points2.points.push_back(pointVis);
-	}
-	for(const auto &nodes : m_rrtStar3.GetNodes())
-	{
-		pointVis.x = nodes->position[0];
-		pointVis.y = nodes->position[1];
-		points3.points.push_back(pointVis);
-	}
-
-	trajectoryVis.markers.push_back(tree1);
-	trajectoryVis.markers.push_back(tree2);
-	trajectoryVis.markers.push_back(tree3);
-	trajectoryVis.markers.push_back(points1);
-	trajectoryVis.markers.push_back(points2);
-	trajectoryVis.markers.push_back(points3);
-
+	
+	trajectoryVis.markers.emplace_back(tree);
+	trajectoryVis.markers.emplace_back(points);
+	
 	m_trajectoryPub.publish(trajectory);
+	// m_treeVisPub.publish(treeVis);
 
 	return trajectoryVis;
 
@@ -319,18 +252,18 @@ std::vector<cv::Vec2f> PathPlanning::LinearInterpolation(std::vector<cv::Vec2f> 
 
 	for(size_t i = 0; i < points.size(); i++)
 	{	
-		float maxDist = sqrt((pow(points[i+1][0] - points[i][0], 2) + pow(points[i+1][1] - points[i][1], 2)) * 1.0);
+		const float maxDist = sqrt((pow(points[i+1][0] - points[i][0], 2) + pow(points[i+1][1] - points[i][1], 2)) * 1.0);
 		float step = BEZIER_RESOLUTION;
 
 		cv::Vec2f endpoint = points[i+1];
-		//closing cone loop - last cone is the first cone
+		
+		// closing cone loop - last cone is the first cone
 		if((i+1) == points.size()) endpoint = points[0];	
 
 		if(maxDist > 6) step /=2;
 
 		for(float j = 0 ; j < 1 ; j += step)
-		{
-			
+		{	
 			temp[0] = points[i][0] + ((endpoint[0]-points[i][0])*j);
 			temp[1] = points[i][1] + ((endpoint[1]-points[i][1])*j);
 			temp_pts.push_back(temp);
@@ -363,7 +296,7 @@ visualization_msgs::MarkerArray PathPlanning::VisualizeInterpolatedCones() const
 	leftpoints.color.g = 0.8f;
  	leftpoints.color.b = 0.0f;
     leftpoints.color.a = 1.0;
-
+	
 	visualization_msgs::Marker rightpoints;
     rightpoints.type = visualization_msgs::Marker::POINTS;
     rightpoints.header.frame_id = "map";
@@ -375,7 +308,7 @@ visualization_msgs::MarkerArray PathPlanning::VisualizeInterpolatedCones() const
 	rightpoints.color.g = 0.0f;
  	rightpoints.color.b = 1.0f;
     rightpoints.color.a = 1.0;
-
+	
 	visualization_msgs::Marker leftpointsBIG;
     leftpointsBIG.type = visualization_msgs::Marker::POINTS;
     leftpointsBIG.header.frame_id = "map";
@@ -387,6 +320,7 @@ visualization_msgs::MarkerArray PathPlanning::VisualizeInterpolatedCones() const
 	leftpointsBIG.color.g = 0.8f;
  	leftpointsBIG.color.b = 0.0f;
     leftpointsBIG.color.a = 1.0;
+	leftpointsBIG.pose.orientation.w = 1.0;
 
 	visualization_msgs::Marker rightpointsBIG;
     rightpointsBIG.type = visualization_msgs::Marker::POINTS;
@@ -399,6 +333,7 @@ visualization_msgs::MarkerArray PathPlanning::VisualizeInterpolatedCones() const
 	rightpointsBIG.color.g = 0.0f;
  	rightpointsBIG.color.b = 1.0f;
     rightpointsBIG.color.a = 1.0;
+	rightpointsBIG.pose.orientation.w = 1.0;
 
 
 	for(const auto &cone : m_leftConesInterpolated)
@@ -434,6 +369,45 @@ visualization_msgs::MarkerArray PathPlanning::VisualizeInterpolatedCones() const
 			leftpointsBIG.points.push_back(temp);	
 		}
 	markerArr.markers.push_back(leftpointsBIG);
+
+	visualization_msgs::Marker start;
+	start.type = visualization_msgs::Marker::POINTS;
+    start.header.frame_id = "map";
+	start.id = 4;
+	start.ns = "start";
+    start.scale.x = 0.5;
+    start.scale.y = 0.5;
+    start.color.r = 0.7f;
+	start.color.g = 0.0f;
+ 	start.color.b = 0.0f;
+    start.color.a = 1.0;
+	temp.x = m_rightCones[0][0];
+	temp.y = m_rightCones[0][1];
+	start.points.push_back(temp);
+	temp.x = m_leftCones[0][0];
+	temp.y = m_leftCones[0][1];
+	start.points.push_back(temp);
+	markerArr.markers.push_back(start);
+
+	visualization_msgs::Marker end;
+	end.type = visualization_msgs::Marker::POINTS;
+    end.header.frame_id = "map";
+	end.id = 5;
+	end.ns = "end";
+    end.scale.x = 0.5;
+    end.scale.y = 0.5;
+    end.color.r = 0.0f;
+	end.color.g = 0.7f;
+ 	end.color.b = 0.0f;
+    end.color.a = 1.0;
+	temp.x = m_rightCones[m_rightCones.size()-1][0];
+	temp.y = m_rightCones[m_rightCones.size()-1][1];
+	end.points.push_back(temp);
+	temp.x = m_leftCones[m_leftCones.size()-1][0];
+	temp.y = m_leftCones[m_leftCones.size()-1][1];
+	end.points.push_back(temp);
+	markerArr.markers.push_back(end);
+
 
 	return markerArr;
 }

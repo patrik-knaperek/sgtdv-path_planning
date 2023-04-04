@@ -1,6 +1,6 @@
 /*****************************************************/
 //Organization: Stuba Green Team
-//Authors: Juraj Krasňanský, Samuel Mazur
+//Authors: Juraj Krasňanský, Samuel Mazur, Patrik Knaperek
 /*****************************************************/
 
 
@@ -18,10 +18,17 @@ PathPlanningSynch::PathPlanningSynch()
  * @param trajectoryPub
  * @param interpolatedConesPub
  */
-//TODO: replace multiple arguments with single one
-void PathPlanningSynch::SetPublisher(const ros::Publisher &trajectoryPub, const ros::Publisher &trajectoryVisPub, const ros::Publisher &interpolatedConesPub)
+void PathPlanningSynch::SetPublisher(const ros::Publisher &trajectoryPub
+                                    , const ros::Publisher &trajectoryVisPub
+                                    , const ros::Publisher &interpolatedConesPub
+                                    // , const ros::Publisher &treeVisPub
+                                    )
 {
-    m_pathPlanning.SetPublisher(trajectoryPub, trajectoryVisPub, interpolatedConesPub);
+    m_pathPlanning.SetPublisher(trajectoryPub
+                                , trajectoryVisPub
+                                , interpolatedConesPub
+                                // , treeVisPub
+                                );
 }
 
 /**
@@ -34,7 +41,6 @@ void PathPlanningSynch::Do()
     {
         m_mapReceived = false;
         m_poseReceived = false;
-        ROS_INFO("Starting trajectory planning");
         m_pathPlanning.Do(m_pathPlanningMsg);
     }
     else
@@ -49,7 +55,6 @@ void PathPlanningSynch::Do()
  */
 void PathPlanningSynch::UpdateMap(const sgtdv_msgs::ConeArr::ConstPtr &msg)
 {
-    ROS_INFO("Map received");
     m_pathPlanningMsg.coneMap = msg;
     m_mapReceived = true;
     Do();
@@ -61,7 +66,6 @@ void PathPlanningSynch::UpdateMap(const sgtdv_msgs::ConeArr::ConstPtr &msg)
  */
 void PathPlanningSynch::UpdatePose(const sgtdv_msgs::CarPose::ConstPtr &msg)
 {
-    ROS_INFO_ONCE("Pose received");
     m_pathPlanningMsg.carPose = msg;
     m_poseReceived = true;
     Do();

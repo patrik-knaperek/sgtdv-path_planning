@@ -19,85 +19,108 @@ RRTStar::~RRTStar() = default;
  * @param endIndex
  * @param startPosition
  * @param endPosition
- * @param ParentNode (experimental - use in case linking previous tree end point to root node of this)
- */
-void RRTStar::Init(std::vector<cv::Vec2f> outsideCones, std::vector<cv::Vec2f> insideCones, int startIndex, int endIndex, cv::Vec2f startPosition, cv::Vec2f endPosition)
+  */
+void RRTStar::Init(const std::vector<cv::Vec2f> &outsideCones, const std::vector<cv::Vec2f> &insideCones, 
+			const int startIndex, const int endIndex, const cv::Vec2f startPosition, const cv::Vec2f endPosition)
 {
 	m_outCones = outsideCones;
     m_inCones = insideCones;
 	m_endPos = endPosition;	
 	
     SetWorldSize(outsideCones, startIndex, endIndex);  
-	Initialize(startPosition);
+	InitializeRootNode(startPosition);
 	srand48(time(0));	
 }
 
-/**
- * @brief Validate if point is on track.
- * @param insideCones
- * @param outsideCones
- * @param targetPoint
- * @param carWidth
- */
 void RRTStar::Do()
 {
 	m_pathReverse.clear();
     for(int i = 0; i < MAX_ITER; i++)
     {
+        // generate random position
         cv::Vec2f newPos;
-        if (GetRandNodePos(newPos))
+        if (GetRandNodePos(&newPos))
         {
-            NodeSPtr qNearestPtr = FindNearestNode(newPos);
-            if (Distance(newPos, qNearestPtr->position) > NODE_STEP_SIZE)
+            NodeSPtr qNearestPtr(FindNearestNode(newPos));
+
+            if (qNearestPtr.get() != nullptr
+                && ComputeDistance(newPos, qNearestPtr->position) > NODE_STEP_SIZE  // check minimum distance from closest node
+                )
             {
-                NormalizePosition(qNearestPtr->position, &newPos);
+                // compute new node position based on vehicle model restrictions
+                NormalizePosition(*qNearestPtr, &newPos);
                 
-                if (PnPoly(m_inCones, m_outCones, newPos))
+                if (isOnTrack(newPos))
                 {
-                    auto qNew = boost::make_shared<Node>();;
+                    // initialize new node
+                    auto qNew = std::make_shared<Node>();;
                     qNew->position = newPos;
                     qNew->orientation = 0;
                     
+                    // find near node with minimal cost
                     std::vector<NodeSPtr> Qnear;
-                    FindNearNodes(qNew->position, NODE_STEP_SIZE * RRTSTAR_NEIGHBOR_FACTOR, Qnear);
+                    FindNearNodes(qNew->position, &Qnear);
                     NodeSPtr qMin = qNearestPtr;
-                    double cmin = qNearestPtr->cost + PathCost(*qNearestPtr, *qNew);
+                    double costMin = qNearestPtr->cost + PathCost(*qNearestPtr, *qNew);
+                    double costNear;
                     for (const auto qNear : Qnear)
 					{
-                        if ((PnPoly(m_inCones, m_outCones, qNew->position)) && (qNear->cost + PathCost(*qNear, *qNew)) < cmin)
+                        if (std::abs(computeAngleDiff(*qNear, qNew->position)) < ANGLE_TH   // angle restriction
+                            && (costNear = (qNear->cost + PathCost(*qNear, *qNew))) < costMin)
 						{
                             qMin = qNear;
-                            cmin = qNear->cost + PathCost(*qNear, *qNew);
+                            costMin = costNear;
                         }
                     }
-                    Add(qMin, qNew);
 
-                    for (auto qNear : Qnear){
-                        if(PnPoly(m_inCones, m_outCones, qNew->position) &&
-                                (qNew->cost + PathCost(*qNew, *qNear)) < qNear->cost){
+                    // add new node to tree
+                    Add(costMin, qMin, qNew);
+
+                    for (auto qNear : Qnear)
+                    {   // trajectory cost optimization
+                        if(std::abs(computeAngleDiff(*qNew, qNear->position)) < ANGLE_TH    // angle restriction
+                            && (qNew->cost + PathCost(*qNew, *qNear)) < qNear->cost)
+                        {
                             NodeSPtr qParent = qNear->parent;
                             qParent->children.erase(std::remove(qParent->children.begin(), qParent->children.end(), qNear), qParent->children.end());
                             qNear->cost = qNew->cost + PathCost(*qNew, *qNear);
                             qNear->parent = qNew;
+                            qNear->orientation = ComputeOrientation(qNew->position, qNear->position);
                             qNew->children.push_back(qNear);
+                            // m_lastNode = qNear;
                         }
                     }
-
                 }
 		        else i--; //to reset iteration counter in case new point is not on track
             }
         }
     }
     NodeSPtr q(nullptr);
-    if (Distance(m_lastNode->position, m_endPos) < END_DIST_THRESHOLD)
-    {
-        q = m_lastNode;
-    }
-    else
+    // if (ComputeDistance(m_lastNode->position, m_endPos) < END_DIST_THRESHOLD)
+    // {
+    //     ROS_INFO("END REACHED");
+    //     q = m_lastNode;
+    // }
+    // else
     {
         // if not reached yet
-        q = FindNearestNode(m_endPos);
+        // ROS_INFO_STREAM("end pos: " << m_endPos);
+        // q = FindNearestNode(m_endPos);
+
+        float minDist = std::numeric_limits<float>::max();
+        for (const auto &node : m_nodes) {
+            double dist = ComputeDistance(m_endPos, node->position);
+            if (dist < minDist && node->parent != nullptr
+                && cos(ComputeOrientation(m_endPos, node->position)) < 0.0) {
+                minDist = dist;
+                q = node;
+            }
+        }
+        m_lastNode = q;
+        if (minDist < 2*NODE_STEP_SIZE)
+            ROS_INFO_STREAM("END REACHED " << minDist);
     }
+
     // generate shortest path to destination.
     while (q != nullptr) {
         m_pathReverse.push_back(q);
@@ -105,18 +128,18 @@ void RRTStar::Do()
     }
 }
 
-const std::vector<RRTStar::NodeSPtr> RRTStar::GetNodes() const
-{
-    return m_nodes;
-}
-
 const std::vector<cv::Vec2f> RRTStar::GetPath() const
 {
     std::vector<cv::Vec2f> path;
     path.reserve(m_pathReverse.size());
-    for (size_t i = m_pathReverse.size() - 1; i != 0; i--)
+    
+    if (m_pathReverse.size() != 0)
     {
-        path.push_back(cv::Vec2f(m_pathReverse[i]->position[0], m_pathReverse[i]->position[1]));
+        for (size_t i = m_pathReverse.size(); i != 0; i--)
+        {
+            path.push_back(cv::Vec2f(m_pathReverse[i-1]->position[0], m_pathReverse[i-1]->position[1]));
+        }
+    
     }
     
     return path;
@@ -125,16 +148,16 @@ const std::vector<cv::Vec2f> RRTStar::GetPath() const
 /**
  * @brief Initialize root node of RRTSTAR.
  */
-void RRTStar::Initialize(cv::Vec2f startPos)
+void RRTStar::InitializeRootNode(const cv::Vec2f startPos)
 {
-    m_root = boost::make_shared<Node>();
+    m_root = std::make_shared<Node>();
     m_root->parent = nullptr;
     m_root->position = startPos;
-    m_root->orientation = 0;
+    m_root->orientation = 0.0;
     m_root->cost = 0.0;
     m_lastNode = m_root;
     m_nodes.push_back(m_root);
-}
+    }
 
 /**
  * @brief Set world size for generating Nodes.
@@ -142,7 +165,7 @@ void RRTStar::Initialize(cv::Vec2f startPos)
  * @param startConeIndex
  * @param endConeIndex
  */
-void RRTStar::SetWorldSize(std::vector<cv::Vec2f> cones, int startIndex, int endIndex)
+void RRTStar::SetWorldSize(const std::vector<cv::Vec2f> &cones, const int startIndex, const int endIndex)
 {
 	m_xMin = std::numeric_limits<float>::max();
 	m_xMax = std::numeric_limits<float>::lowest();
@@ -169,12 +192,12 @@ void RRTStar::SetWorldSize(std::vector<cv::Vec2f> cones, int startIndex, int end
  * @param point
  * @return true if generated position is in map
  */
-bool RRTStar::GetRandNodePos(cv::Vec2f &point) const
+bool RRTStar::GetRandNodePos(cv::Vec2f *point) const
 {
-    point[0] = (drand48() * m_world_width) + m_xMin;
-    point[1] = (drand48() * m_world_height) + m_yMin;
+    (*point)[0] = (drand48() * m_world_width) + m_xMin;
+    (*point)[1] = (drand48() * m_world_height) + m_yMin;
     
-    return (point[0] >= m_xMin && point[0] <= m_xMax && point[1] >= m_yMin && point[1] <= m_yMax);
+    return ((*point)[0] >= m_xMin && (*point)[0] <= m_xMax && (*point)[1] >= m_yMin && (*point)[1] <= m_yMax);
 }
 
 /**
@@ -183,9 +206,14 @@ bool RRTStar::GetRandNodePos(cv::Vec2f &point) const
  * @param q
  * @return
  */
-double RRTStar::Distance(const cv::Vec2f &p, const cv::Vec2f &q) const
+double RRTStar::ComputeDistance(const cv::Vec2f p, const cv::Vec2f q) const
 {
     return sqrt(powf(p[0] - q[0], 2) + powf(p[1] - q[1], 2));
+}
+
+double RRTStar::ComputeOrientation(const cv::Vec2f pFrom, const cv::Vec2f pTo) const
+{
+    return std::atan2((pTo[1] - pFrom[1]), (pTo[0] - pFrom[0]));
 }
 
 /**
@@ -193,17 +221,19 @@ double RRTStar::Distance(const cv::Vec2f &p, const cv::Vec2f &q) const
  * @param point
  * @return
  */
-RRTStar::NodeSPtr RRTStar::FindNearestNode(const cv::Vec2f &point) const
+RRTStar::NodeSPtr RRTStar::FindNearestNode(const cv::Vec2f point) const
 {
     float minDist = std::numeric_limits<float>::max();
     NodeSPtr closest(nullptr);
     for (const auto &node : m_nodes) {
-        double dist = Distance(point, node->position);
+        double dist = ComputeDistance(point, node->position);
+        
         if (dist < minDist) {
             minDist = dist;
             closest = node;
         }
     }
+    
     return closest;
 }
 
@@ -214,12 +244,13 @@ RRTStar::NodeSPtr RRTStar::FindNearestNode(const cv::Vec2f &point) const
  * @param out_nodes
  * @return
  */
-void RRTStar::FindNearNodes(const cv::Vec2f &point, const float radius, std::vector<NodeSPtr>& out_nodes) const
+void RRTStar::FindNearNodes(const cv::Vec2f point, std::vector<NodeSPtr> *out_nodes) const
 {
     for (const auto &node : m_nodes) {
-        double dist = Distance(point, node->position);
-        if (dist < radius) {
-            out_nodes.push_back(node);
+        double dist = ComputeDistance(point, node->position);
+        double angle = computeAngleDiff(*node, point);
+        if (dist < NODE_STEP_SIZE * RRTSTAR_NEIGHBOR_FACTOR) {
+            (*out_nodes).push_back(node);
         }
     }
 }
@@ -230,14 +261,21 @@ void RRTStar::FindNearNodes(const cv::Vec2f &point, const float radius, std::vec
  * @param qPos
  * @return
  */
-void RRTStar::NormalizePosition(const cv::Vec2f &qNearestPos, cv::Vec2f *qPos) const
+void RRTStar::NormalizePosition(const Node &qNearest, cv::Vec2f *qPos) const
 {
-    cv::Vec2f to = *qPos;
-    cv::Vec2f from = qNearestPos;
-    cv::Vec2f intermediate = to - from;
-	intermediate = intermediate / cv::norm(intermediate);
-    *qPos = from + NODE_STEP_SIZE * intermediate;
-}
+    // angle restriction
+    double angleDiff = computeAngleDiff(qNearest, *qPos);
+    if (angleDiff > ANGLE_TH)
+    {
+        angleDiff = ANGLE_TH;
+    } else if (angleDiff < -ANGLE_TH)
+    {
+        angleDiff = -ANGLE_TH;
+    }
+    const double angle = qNearest.orientation + angleDiff;
+
+    *qPos = qNearest.position + cv::Vec2f(cos(angle), sin(angle)) * NODE_STEP_SIZE;
+    }
 
 /**
  * @brief Compute path cost.
@@ -247,7 +285,18 @@ void RRTStar::NormalizePosition(const cv::Vec2f &qNearestPos, cv::Vec2f *qPos) c
  */
 double RRTStar::PathCost(const Node &qFrom, const Node &qTo) const
 {
-    return Distance(qTo.position, qFrom.position);
+    const double distance = ComputeDistance(qTo.position, qFrom.position);
+    return distance;
+}
+
+double RRTStar::computeAngleDiff(const Node &qFrom, const cv::Vec2f pTo) const
+{
+    double angleDiff = ComputeOrientation(qFrom.position, pTo) - qFrom.orientation;
+    if (std::abs(angleDiff) > M_PI)
+    {
+        angleDiff = std::pow(-1, static_cast<int>(angleDiff > 0)) * (2 * M_PI - std::abs(angleDiff));
+    }
+    return angleDiff;
 }
 
 /**
@@ -255,40 +304,37 @@ double RRTStar::PathCost(const Node &qFrom, const Node &qTo) const
  * @param qNearest
  * @param qNew
  */
-void RRTStar::Add(NodeSPtr qNearest, NodeSPtr qNew)
+void RRTStar::Add(const double costMin, const NodeSPtr &qNearest, const NodeSPtr &qNew)
 {
     qNew->parent = qNearest;
-    qNew->cost = qNearest->cost + PathCost(*qNearest, *qNew);
+    qNew->orientation = ComputeOrientation(qNearest->position, qNew->position);
+    qNew->cost = costMin;
     qNearest->children.push_back(qNew);
     m_nodes.push_back(qNew);
-    m_lastNode = qNew;
+    // m_lastNode = qNew;
 }
 
 /**
  * @brief Validate if point is on track.
- * @param insideCones
- * @param outsideCones
  * @param targetPoint
- * @param carWidth
  * @return
  */
-bool RRTStar::PnPoly(const std::vector<cv::Vec2f> &insideCones, const std::vector<cv::Vec2f> &outsideCones, 
-                    const cv::Vec2f &targetPoint) const
+bool RRTStar::isOnTrack(const cv::Vec2f targetPoint) const
 {
 	bool c = false;
 	int i, j = 0;
-	for (i = 0, j = outsideCones.size() - 1; i < outsideCones.size(); j = i++) 
+	for (i = 0, j = m_outCones.size() - 1; i < m_outCones .size(); j = i++) 
 	{
-		if ( ((outsideCones[i][1] > targetPoint[1]) != (outsideCones[j][1] > targetPoint[1])) && 
-		((targetPoint[0] < (outsideCones[j][0] - outsideCones[i][0]) * (targetPoint[1] - outsideCones[i][1]) / (outsideCones[j][1] - outsideCones[i][1]) + outsideCones[i][0])) )
+		if ( ((m_outCones [i][1] > targetPoint[1]) != (m_outCones [j][1] > targetPoint[1])) && 
+		((targetPoint[0] < (m_outCones [j][0] - m_outCones [i][0]) * (targetPoint[1] - m_outCones [i][1]) / (m_outCones [j][1] - m_outCones [i][1]) + m_outCones [i][0])) )
 			c = !c;
 		
 	}
 	if(c)
 	{
-		for (const auto &cone : outsideCones) 
+		for (const auto &cone : m_outCones ) 
 		{
-        	double dist = Distance(cone, targetPoint);
+        	double dist = ComputeDistance(cone, targetPoint);
         	if (dist < CAR_WIDTH / 2) 
 			{
             	c = false;
@@ -299,18 +345,18 @@ bool RRTStar::PnPoly(const std::vector<cv::Vec2f> &insideCones, const std::vecto
 
 	if(c)
 	{
-		for (i = 0, j = insideCones.size() - 1; i < insideCones.size(); j = i++) 
+		for (i = 0, j = m_inCones.size() - 1; i < m_inCones.size(); j = i++) 
 		{
-			if ( ((insideCones[i][1] > targetPoint[1]) != (insideCones[j][1] > targetPoint[1])) && 
-			((targetPoint[0] < (insideCones[j][0] - insideCones[i][0]) * (targetPoint[1] - insideCones[i][1]) / (insideCones[j][1] - insideCones[i][1]) + insideCones[i][0])) )
+			if ( ((m_inCones [i][1] > targetPoint[1]) != (m_inCones [j][1] > targetPoint[1])) && 
+			((targetPoint[0] < (m_inCones [j][0] - m_inCones [i][0]) * (targetPoint[1] - m_inCones [i][1]) / (m_inCones [j][1] - m_inCones [i][1]) + m_inCones [i][0])) )
 				c = !c;
 		}
 
 		if(c)
 		{
-			for (const auto &cone : insideCones) 
+			for (const auto &cone : m_inCones ) 
 			{
-        		double dist = Distance(cone, targetPoint);
+        		double dist = ComputeDistance(cone, targetPoint);
         		if (dist < CAR_WIDTH / 2) 
 				{
             		c = false;

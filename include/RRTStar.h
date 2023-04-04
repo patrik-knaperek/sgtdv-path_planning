@@ -20,41 +20,44 @@ class RRTStar
 {
 public:
 	struct Node {
-	std::vector<boost::shared_ptr<Node>> children;
-	boost::shared_ptr<Node> parent;
+	std::vector<std::shared_ptr<Node>> children;
+	std::shared_ptr<Node> parent;
 	cv::Vec2f position;
 	float orientation;
 	double cost;
 	};
-	typedef boost::shared_ptr<Node> NodeSPtr;
+	typedef std::shared_ptr<Node> NodeSPtr;
 
 	static constexpr float END_DIST_THRESHOLD	   = 0.25;
 	static constexpr float RRTSTAR_NEIGHBOR_FACTOR = 5;
 	static constexpr float CAR_WIDTH		       = 2.0;
 	static constexpr float NODE_STEP_SIZE		   = 0.3;
-	static constexpr int   MAX_ITER 			   = 200;
+	static constexpr int   MAX_ITER 			   = 500;
+	static constexpr double ANGLE_TH			   = 0.1 * M_PI;
 
 public:
 	RRTStar();
 	~RRTStar();
 
 	void Do();
-	void Init(std::vector<cv::Vec2f> outsideCones, std::vector<cv::Vec2f> insideCones,int startIndex, int endIndex, cv::Vec2f startPosition, cv::Vec2f endPosition);
-	const std::vector<NodeSPtr> GetNodes() const;
+	void Init(const std::vector<cv::Vec2f> &outsideCones, const std::vector<cv::Vec2f> &insideCones, 
+			const int startIndex, const int endIndex, const cv::Vec2f startPosition, const cv::Vec2f endPosition);
+	const std::vector<NodeSPtr> GetNodes() const { return m_nodes; };
 	const std::vector<cv::Vec2f> GetPath() const;
 
 private:
-	void Initialize(cv::Vec2f startPos);
-	void SetWorldSize(std::vector<cv::Vec2f> cones, int startIndex, int endIndex);
-	bool GetRandNodePos(cv::Vec2f &point) const;
-	NodeSPtr FindNearestNode(const cv::Vec2f &point) const;
-	void FindNearNodes(const cv::Vec2f &point, const float radius, std::vector<NodeSPtr>& out_nodes) const;
+	void InitializeRootNode(const cv::Vec2f startPos);
+	void SetWorldSize(const std::vector<cv::Vec2f> &cones, const int startIndex, const int endIndex);
+	bool GetRandNodePos(cv::Vec2f *point) const;
+	NodeSPtr FindNearestNode(const cv::Vec2f point) const;
+	void FindNearNodes(const cv::Vec2f point, std::vector<NodeSPtr> *out_nodes) const;
 	double PathCost(const Node &qFrom, const Node &qTo) const;
-	void NormalizePosition(const cv::Vec2f &qNearestPos, cv::Vec2f *qPos) const;
-	void Add(NodeSPtr qNearest, NodeSPtr qNew);
-	bool PnPoly(const std::vector<cv::Vec2f> &insideCones, const std::vector<cv::Vec2f> &outsideCones, 
-                const cv::Vec2f &targetPoint) const;
-	double Distance(const cv::Vec2f &p, const cv::Vec2f &q) const;
+	void NormalizePosition(const Node &qNearest, cv::Vec2f *qPos) const;
+	void Add(const double costMin, const NodeSPtr &qNearest, const NodeSPtr &qNew);
+	bool isOnTrack(const cv::Vec2f targetPoint) const;
+	double ComputeDistance(const cv::Vec2f p, const cv::Vec2f q) const;
+	double ComputeOrientation(const cv::Vec2f pFrom, const cv::Vec2f pTo) const;
+	double computeAngleDiff(const Node &qFrom, const cv::Vec2f pTo) const;
 
 	std::vector<NodeSPtr> m_nodes, m_pathReverse;
 	
