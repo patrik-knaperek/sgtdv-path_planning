@@ -10,6 +10,7 @@
 
 // ROS
 #include <ros/ros.h>
+#include <std_msgs/Empty.h>
 
 // SGT
 #include "../include/PathPlanning.h"
@@ -28,11 +29,11 @@ public:
     void SetPublisher(const ros::Publisher &trajectoryPub
                     , const ros::Publisher &trajectoryVisPub
                     , const ros::Publisher &interpolatedConesPub
-                    // , const ros::Publisher &treeVisPub
                     );
     void Do();
     void UpdateMap(const sgtdv_msgs::ConeArr::ConstPtr &msg);
     void UpdatePose(const sgtdv_msgs::CarPose::ConstPtr &msg);
+    void LoopClosureCallback(const std_msgs::Empty::ConstPtr &msg);
     void YellowOnLeft(bool value);
     //void SetDiscipline(Discipline discipline);
 

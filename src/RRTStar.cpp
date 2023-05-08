@@ -32,7 +32,7 @@ void RRTStar::Init(const std::vector<cv::Vec2f> &outsideCones, const std::vector
 	srand48(time(0));	
 }
 
-void RRTStar::Do()
+bool RRTStar::Do()
 {
 	m_pathReverse.clear();
     for(int i = 0; i < MAX_ITER; i++)
@@ -95,19 +95,10 @@ void RRTStar::Do()
             }
         }
     }
-    NodeSPtr q(nullptr);
-    // if (ComputeDistance(m_lastNode->position, m_endPos) < END_DIST_THRESHOLD)
-    // {
-    //     ROS_INFO("END REACHED");
-    //     q = m_lastNode;
-    // }
-    // else
-    {
-        // if not reached yet
-        // ROS_INFO_STREAM("end pos: " << m_endPos);
-        // q = FindNearestNode(m_endPos);
 
-        float minDist = std::numeric_limits<float>::max();
+    bool endReached(false);
+    NodeSPtr q(nullptr);
+    float minDist = std::numeric_limits<float>::max();
         for (const auto &node : m_nodes) {
             double dist = ComputeDistance(m_endPos, node->position);
             if (dist < minDist && node->parent != nullptr
@@ -117,31 +108,35 @@ void RRTStar::Do()
             }
         }
         m_lastNode = q;
-        if (minDist < 2*NODE_STEP_SIZE)
-            ROS_INFO_STREAM("END REACHED " << minDist);
-    }
+        if (minDist < RRTSTAR_NEIGHBOR_RADIUS)
+        {
+            endReached = true;
+        }
 
     // generate shortest path to destination.
     while (q != nullptr) {
         m_pathReverse.push_back(q);
         q = q->parent;
     }
+
+    return endReached;
 }
 
-const std::vector<cv::Vec2f> RRTStar::GetPath() const
+const sgtdv_msgs::Point2DArr RRTStar::GetPath() const
 {
-    std::vector<cv::Vec2f> path;
-    path.reserve(m_pathReverse.size());
+    sgtdv_msgs::Point2DArr path;
+    sgtdv_msgs::Point2D point;
+    path.points.reserve(m_pathReverse.size());
     
     if (m_pathReverse.size() != 0)
     {
         for (size_t i = m_pathReverse.size(); i != 0; i--)
         {
-            path.push_back(cv::Vec2f(m_pathReverse[i-1]->position[0], m_pathReverse[i-1]->position[1]));
+            point.x = m_pathReverse[i-1]->position[0];
+            point.y = m_pathReverse[i-1]->position[1];
+            path.points.push_back(point);
         }
-    
     }
-    
     return path;
 }
 
@@ -249,7 +244,7 @@ void RRTStar::FindNearNodes(const cv::Vec2f point, std::vector<NodeSPtr> *out_no
     for (const auto &node : m_nodes) {
         double dist = ComputeDistance(point, node->position);
         double angle = computeAngleDiff(*node, point);
-        if (dist < NODE_STEP_SIZE * RRTSTAR_NEIGHBOR_FACTOR) {
+        if (dist < RRTSTAR_NEIGHBOR_RADIUS) {
             (*out_nodes).push_back(node);
         }
     }

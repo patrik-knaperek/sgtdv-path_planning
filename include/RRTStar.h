@@ -16,6 +16,9 @@
 // ROS
 #include <ros/ros.h>
 
+// SGT DV
+#include <sgtdv_msgs/Point2DArr.h>
+
 class RRTStar
 {
 public:
@@ -28,10 +31,10 @@ public:
 	};
 	typedef std::shared_ptr<Node> NodeSPtr;
 
-	static constexpr float END_DIST_THRESHOLD	   = 0.25;
-	static constexpr float RRTSTAR_NEIGHBOR_FACTOR = 5;
-	static constexpr float CAR_WIDTH		       = 2.0;
 	static constexpr float NODE_STEP_SIZE		   = 0.3;
+	static constexpr float END_DIST_THRESHOLD	   = 0.25;
+	static constexpr float RRTSTAR_NEIGHBOR_RADIUS = 5 * NODE_STEP_SIZE;
+	static constexpr float CAR_WIDTH		       = 2.0;
 	static constexpr int   MAX_ITER 			   = 500;
 	static constexpr double ANGLE_TH			   = 0.1 * M_PI;
 
@@ -39,11 +42,11 @@ public:
 	RRTStar();
 	~RRTStar();
 
-	void Do();
+	bool Do();
 	void Init(const std::vector<cv::Vec2f> &outsideCones, const std::vector<cv::Vec2f> &insideCones, 
 			const int startIndex, const int endIndex, const cv::Vec2f startPosition, const cv::Vec2f endPosition);
 	const std::vector<NodeSPtr> GetNodes() const { return m_nodes; };
-	const std::vector<cv::Vec2f> GetPath() const;
+	const sgtdv_msgs::Point2DArr GetPath() const;
 
 private:
 	void InitializeRootNode(const cv::Vec2f startPos);

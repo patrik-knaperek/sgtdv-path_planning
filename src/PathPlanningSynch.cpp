@@ -21,13 +21,11 @@ PathPlanningSynch::PathPlanningSynch()
 void PathPlanningSynch::SetPublisher(const ros::Publisher &trajectoryPub
                                     , const ros::Publisher &trajectoryVisPub
                                     , const ros::Publisher &interpolatedConesPub
-                                    // , const ros::Publisher &treeVisPub
                                     )
 {
     m_pathPlanning.SetPublisher(trajectoryPub
                                 , trajectoryVisPub
                                 , interpolatedConesPub
-                                // , treeVisPub
                                 );
 }
 
@@ -55,9 +53,19 @@ void PathPlanningSynch::Do()
  */
 void PathPlanningSynch::UpdateMap(const sgtdv_msgs::ConeArr::ConstPtr &msg)
 {
-    m_pathPlanningMsg.coneMap = msg;
-    m_mapReceived = true;
-    Do();
+    if (!msg->cones.empty())
+    {
+        m_pathPlanningMsg.coneMap = msg;
+        m_mapReceived = true;
+        Do();
+    }
+    else
+        m_mapReceived = false;
+}
+
+void PathPlanningSynch::LoopClosureCallback(const std_msgs::Empty::ConstPtr &msg)
+{
+    m_pathPlanning.FullMap();
 }
 
 /**
