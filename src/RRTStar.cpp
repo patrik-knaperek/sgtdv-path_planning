@@ -20,8 +20,8 @@ RRTStar::~RRTStar() = default;
  * @param startPosition
  * @param endPosition
   */
-void RRTStar::Init(const std::vector<cv::Vec2f> &outsideCones, const std::vector<cv::Vec2f> &insideCones, 
-			const int startIndex, const int endIndex, const cv::Vec2f startPosition, const cv::Vec2f endPosition)
+void RRTStar::Init(const std::vector<Eigen::Vector2f> &outsideCones, const std::vector<Eigen::Vector2f> &insideCones, 
+			const int startIndex, const int endIndex, const Eigen::Vector2f startPosition, const Eigen::Vector2f endPosition)
 {
 	m_outCones = outsideCones;
     m_inCones = insideCones;
@@ -38,7 +38,7 @@ bool RRTStar::Do()
     for(int i = 0; i < MAX_ITER; i++)
     {
         // generate random position
-        cv::Vec2f newPos;
+        Eigen::Vector2f newPos;
         if (GetRandNodePos(&newPos))
         {
             NodeSPtr qNearestPtr(FindNearestNode(newPos));
@@ -132,8 +132,8 @@ const sgtdv_msgs::Point2DArr RRTStar::GetPath() const
     {
         for (size_t i = m_pathReverse.size(); i != 0; i--)
         {
-            point.x = m_pathReverse[i-1]->position[0];
-            point.y = m_pathReverse[i-1]->position[1];
+            point.x = m_pathReverse[i-1]->position(0);
+            point.y = m_pathReverse[i-1]->position(1);
             path.points.push_back(point);
         }
     }
@@ -143,7 +143,7 @@ const sgtdv_msgs::Point2DArr RRTStar::GetPath() const
 /**
  * @brief Initialize root node of RRTSTAR.
  */
-void RRTStar::InitializeRootNode(const cv::Vec2f startPos)
+void RRTStar::InitializeRootNode(const Eigen::Vector2f startPos)
 {
     m_root = std::make_shared<Node>();
     m_root->parent = nullptr;
@@ -160,7 +160,7 @@ void RRTStar::InitializeRootNode(const cv::Vec2f startPos)
  * @param startConeIndex
  * @param endConeIndex
  */
-void RRTStar::SetWorldSize(const std::vector<cv::Vec2f> &cones, const int startIndex, const int endIndex)
+void RRTStar::SetWorldSize(const std::vector<Eigen::Vector2f> &cones, const int startIndex, const int endIndex)
 {
 	m_xMin = std::numeric_limits<float>::max();
 	m_xMax = std::numeric_limits<float>::lowest();
@@ -171,11 +171,11 @@ void RRTStar::SetWorldSize(const std::vector<cv::Vec2f> &cones, const int startI
 
 	for(size_t i = startIndex; i<endIndex; i++)
 	{
-		if(m_xMin > cones[i][0]) m_xMin = cones[i][0];
-		if(m_xMax < cones[i][0]) m_xMax = cones[i][0];
+		if(m_xMin > cones[i](0)) m_xMin = cones[i](0);
+		if(m_xMax < cones[i](0)) m_xMax = cones[i](0);
 
-		if(m_yMin > cones[i][1]) m_yMin = cones[i][1];
-		if(m_yMax < cones[i][1]) m_yMax = cones[i][1];
+		if(m_yMin > cones[i](1)) m_yMin = cones[i](1);
+		if(m_yMax < cones[i](1)) m_yMax = cones[i](1);
 	}
 
 	m_world_width = m_xMax - m_xMin;
@@ -187,12 +187,12 @@ void RRTStar::SetWorldSize(const std::vector<cv::Vec2f> &cones, const int startI
  * @param point
  * @return true if generated position is in map
  */
-bool RRTStar::GetRandNodePos(cv::Vec2f *point) const
+bool RRTStar::GetRandNodePos(Eigen::Vector2f *point) const
 {
-    (*point)[0] = (drand48() * m_world_width) + m_xMin;
-    (*point)[1] = (drand48() * m_world_height) + m_yMin;
+    (*point)(0) = (drand48() * m_world_width) + m_xMin;
+    (*point)(1) = (drand48() * m_world_height) + m_yMin;
     
-    return ((*point)[0] >= m_xMin && (*point)[0] <= m_xMax && (*point)[1] >= m_yMin && (*point)[1] <= m_yMax);
+    return ((*point)(0) >= m_xMin && (*point)(0) <= m_xMax && (*point)(1) >= m_yMin && (*point)(1) <= m_yMax);
 }
 
 /**
@@ -201,14 +201,14 @@ bool RRTStar::GetRandNodePos(cv::Vec2f *point) const
  * @param q
  * @return
  */
-double RRTStar::ComputeDistance(const cv::Vec2f p, const cv::Vec2f q) const
+double RRTStar::ComputeDistance(const Eigen::Vector2f p, const Eigen::Vector2f q) const
 {
-    return sqrt(powf(p[0] - q[0], 2) + powf(p[1] - q[1], 2));
+    return sqrt(powf(p(0) - q(0), 2) + powf(p(1) - q(1), 2));
 }
 
-double RRTStar::ComputeOrientation(const cv::Vec2f pFrom, const cv::Vec2f pTo) const
+double RRTStar::ComputeOrientation(const Eigen::Vector2f pFrom, const Eigen::Vector2f pTo) const
 {
-    return std::atan2((pTo[1] - pFrom[1]), (pTo[0] - pFrom[0]));
+    return std::atan2((pTo(1) - pFrom(1)), (pTo(0) - pFrom(0)));
 }
 
 /**
@@ -216,7 +216,7 @@ double RRTStar::ComputeOrientation(const cv::Vec2f pFrom, const cv::Vec2f pTo) c
  * @param point
  * @return
  */
-RRTStar::NodeSPtr RRTStar::FindNearestNode(const cv::Vec2f point) const
+RRTStar::NodeSPtr RRTStar::FindNearestNode(const Eigen::Vector2f point) const
 {
     float minDist = std::numeric_limits<float>::max();
     NodeSPtr closest(nullptr);
@@ -239,7 +239,7 @@ RRTStar::NodeSPtr RRTStar::FindNearestNode(const cv::Vec2f point) const
  * @param out_nodes
  * @return
  */
-void RRTStar::FindNearNodes(const cv::Vec2f point, std::vector<NodeSPtr> *out_nodes) const
+void RRTStar::FindNearNodes(const Eigen::Vector2f point, std::vector<NodeSPtr> *out_nodes) const
 {
     for (const auto &node : m_nodes) {
         double dist = ComputeDistance(point, node->position);
@@ -256,7 +256,7 @@ void RRTStar::FindNearNodes(const cv::Vec2f point, std::vector<NodeSPtr> *out_no
  * @param qPos
  * @return
  */
-void RRTStar::NormalizePosition(const Node &qNearest, cv::Vec2f *qPos) const
+void RRTStar::NormalizePosition(const Node &qNearest, Eigen::Vector2f *qPos) const
 {
     // angle restriction
     double angleDiff = computeAngleDiff(qNearest, *qPos);
@@ -269,7 +269,7 @@ void RRTStar::NormalizePosition(const Node &qNearest, cv::Vec2f *qPos) const
     }
     const double angle = qNearest.orientation + angleDiff;
 
-    *qPos = qNearest.position + cv::Vec2f(cos(angle), sin(angle)) * NODE_STEP_SIZE;
+    *qPos = qNearest.position + Eigen::Vector2f(cos(angle), sin(angle)) * NODE_STEP_SIZE;
     }
 
 /**
@@ -284,7 +284,7 @@ double RRTStar::PathCost(const Node &qFrom, const Node &qTo) const
     return distance;
 }
 
-double RRTStar::computeAngleDiff(const Node &qFrom, const cv::Vec2f pTo) const
+double RRTStar::computeAngleDiff(const Node &qFrom, const Eigen::Vector2f pTo) const
 {
     double angleDiff = ComputeOrientation(qFrom.position, pTo) - qFrom.orientation;
     if (std::abs(angleDiff) > M_PI)
@@ -314,14 +314,14 @@ void RRTStar::Add(const double costMin, const NodeSPtr &qNearest, const NodeSPtr
  * @param targetPoint
  * @return
  */
-bool RRTStar::isOnTrack(const cv::Vec2f targetPoint) const
+bool RRTStar::isOnTrack(const Eigen::Vector2f targetPoint) const
 {
 	bool c = false;
 	int i, j = 0;
 	for (i = 0, j = m_outCones.size() - 1; i < m_outCones .size(); j = i++) 
 	{
-		if ( ((m_outCones [i][1] > targetPoint[1]) != (m_outCones [j][1] > targetPoint[1])) && 
-		((targetPoint[0] < (m_outCones [j][0] - m_outCones [i][0]) * (targetPoint[1] - m_outCones [i][1]) / (m_outCones [j][1] - m_outCones [i][1]) + m_outCones [i][0])) )
+		if ( ((m_outCones [i](1) > targetPoint(1)) != (m_outCones [j](1) > targetPoint(1))) && 
+		((targetPoint(0) < (m_outCones [j](0) - m_outCones [i](0)) * (targetPoint(1) - m_outCones [i](1)) / (m_outCones [j](1) - m_outCones [i](1)) + m_outCones [i](0))) )
 			c = !c;
 		
 	}
@@ -342,8 +342,8 @@ bool RRTStar::isOnTrack(const cv::Vec2f targetPoint) const
 	{
 		for (i = 0, j = m_inCones.size() - 1; i < m_inCones.size(); j = i++) 
 		{
-			if ( ((m_inCones [i][1] > targetPoint[1]) != (m_inCones [j][1] > targetPoint[1])) && 
-			((targetPoint[0] < (m_inCones [j][0] - m_inCones [i][0]) * (targetPoint[1] - m_inCones [i][1]) / (m_inCones [j][1] - m_inCones [i][1]) + m_inCones [i][0])) )
+			if ( ((m_inCones [i](1) > targetPoint(1)) != (m_inCones [j](1) > targetPoint(1))) && 
+			((targetPoint(0) < (m_inCones [j](0) - m_inCones [i](0)) * (targetPoint(1) - m_inCones [i](1)) / (m_inCones [j](1) - m_inCones [i](1)) + m_inCones [i](0))) )
 				c = !c;
 		}
 

@@ -95,9 +95,9 @@ bool PathPlanning::RRTRun()
 		m_timeravg = 0;
 		m_timeravgcount = 0;
 		
-		cv::Vec2f startPos = ((m_leftConesInterpolated[0] + m_rightConesInterpolated[0]) / 2.f);
+		Eigen::Vector2f startPos = ((m_leftConesInterpolated[0] + m_rightConesInterpolated[0]) * 0.5f);
 		short cone_iter = m_leftConesInterpolated.size();
-		cv::Vec2f endPos = ((m_leftConesInterpolated[m_leftConesInterpolated.size()-1] + m_rightConesInterpolated[m_rightConesInterpolated.size()-1]) / 2.f);
+		Eigen::Vector2f endPos = ((m_leftConesInterpolated[m_leftConesInterpolated.size()-1] + m_rightConesInterpolated[m_rightConesInterpolated.size()-1]) * 0.5f);
 		
 		m_rrtStar.Init(m_leftConesInterpolated, m_rightConesInterpolated,0, cone_iter, startPos, endPos);
 	}
@@ -133,7 +133,7 @@ void PathPlanning::SortCones(const PathPlanningMsg &msg)
 
     for (const auto &cone : msg.coneMap->cones)
     {
-        cv::Vec2f conePos(cone.coords.x, cone.coords.y);
+        Eigen::Vector2f conePos(cone.coords.x, cone.coords.y);
 
         switch (cone.color)
         {
@@ -165,17 +165,17 @@ void PathPlanning::SortCones(const PathPlanningMsg &msg)
  * @param sortedCones
  * @return
  */
-std::vector<cv::Vec2f> PathPlanning::LinearInterpolation(std::vector<cv::Vec2f> points) const
+std::vector<Eigen::Vector2f> PathPlanning::LinearInterpolation(std::vector<Eigen::Vector2f> points) const
 {
-	std::vector<cv::Vec2f> temp_pts;
-	cv::Vec2f temp;
+	std::vector<Eigen::Vector2f> temp_pts;
+	Eigen::Vector2f temp;
 
 	for(size_t i = 0; i < points.size(); i++)
 	{	
-		const float maxDist = sqrt((pow(points[i+1][0] - points[i][0], 2) + pow(points[i+1][1] - points[i][1], 2)) * 1.0);
+		const float maxDist = sqrt((pow(points[i+1](0) - points[i](0), 2) + pow(points[i+1](1) - points[i](1), 2)) * 1.0);
 		float step = BEZIER_RESOLUTION;
 
-		cv::Vec2f endpoint = points[i+1];
+		Eigen::Vector2f endpoint = points[i+1];
 		
 		// closing cone loop - last cone is the first cone
 		if((i+1) == points.size()) endpoint = points[0];	
@@ -184,13 +184,13 @@ std::vector<cv::Vec2f> PathPlanning::LinearInterpolation(std::vector<cv::Vec2f> 
 
 		for(float j = 0 ; j < 1 ; j += step)
 		{	
-			temp[0] = points[i][0] + ((endpoint[0]-points[i][0])*j);
-			temp[1] = points[i][1] + ((endpoint[1]-points[i][1])*j);
+			temp(0) = points[i](0) + ((endpoint(0)-points[i](0))*j);
+			temp(1) = points[i](1) + ((endpoint(1)-points[i](1))*j);
 			temp_pts.push_back(temp);
 		}
 	}	
-	temp[0] = points[0][0];
-	temp[1] = points[0][1];
+	temp(0) = points[0](0);
+	temp(1) = points[0](1);
 	temp_pts.push_back(temp);
 
     return temp_pts; 
@@ -209,16 +209,16 @@ sgtdv_msgs::Point2DArr PathPlanning::FindMiddlePoints()
 
     for (size_t i = 0; i < m_rightConesInterpolated.size(); i++)
     {
-		cv::Vec2f newPoint = ((m_leftConesInterpolated[i] + m_rightConesInterpolated[i]) / 2.f);
+		Eigen::Vector2f newPoint = ((m_leftConesInterpolated[i] + m_rightConesInterpolated[i]) / 2.f);
 		m_middleLinePoints.push_back(newPoint);		
     }
 
 	for(size_t i = 0; i < m_middleLinePoints.size()-3; i+=4)
 	{	
 
-		cv::Vec2f endpoint2 = m_middleLinePoints[i+2];
-		cv::Vec2f endpoint3 = m_middleLinePoints[i+3];
-		cv::Vec2f endpoint4 = m_middleLinePoints[i+4];
+		Eigen::Vector2f endpoint2 = m_middleLinePoints[i+2];
+		Eigen::Vector2f endpoint3 = m_middleLinePoints[i+3];
+		Eigen::Vector2f endpoint4 = m_middleLinePoints[i+4];
 
 		if((i+2) == m_middleLinePoints.size()) endpoint2 = m_middleLinePoints[0];
 		if((i+3)>m_middleLinePoints.size()) endpoint3 = m_middleLinePoints[1];	
@@ -228,14 +228,14 @@ sgtdv_msgs::Point2DArr PathPlanning::FindMiddlePoints()
     	for( float j = 0 ; j < 1 ; j += 0.01)
 		{
 
-			float xa = m_middleLinePoints[i][0] + ((m_middleLinePoints[i+1][0]-m_middleLinePoints[i][0])*j);
-			float ya = m_middleLinePoints[i][1] + ((m_middleLinePoints[i+1][1]-m_middleLinePoints[i][1])*j);
-			float xb= m_middleLinePoints[i+1][0] + ((endpoint2[0]-m_middleLinePoints[i+1][0])*j);
-			float yb = m_middleLinePoints[i+1][1] + ((endpoint2[1]-m_middleLinePoints[i+1][1])*j);
-			float xc = endpoint2[0] + ((endpoint3[0]-endpoint2[0])*j);
-			float yc = endpoint2[1] + ((endpoint3[1]-endpoint2[1])*j);
-			float xd = endpoint3[0] + ((endpoint4[0]-endpoint3[0])*j);
-			float yd = endpoint3[1] + ((endpoint4[1]-endpoint3[1])*j);
+			float xa = m_middleLinePoints[i](0) + ((m_middleLinePoints[i+1](0)-m_middleLinePoints[i](0))*j);
+			float ya = m_middleLinePoints[i](1) + ((m_middleLinePoints[i+1](1)-m_middleLinePoints[i](1))*j);
+			float xb= m_middleLinePoints[i+1](0) + ((endpoint2(0)-m_middleLinePoints[i+1](0))*j);
+			float yb = m_middleLinePoints[i+1](1) + ((endpoint2(1)-m_middleLinePoints[i+1](1))*j);
+			float xc = endpoint2(0) + ((endpoint3(0)-endpoint2(0))*j);
+			float yc = endpoint2(1) + ((endpoint3(1)-endpoint2(1))*j);
+			float xd = endpoint3(0) + ((endpoint4(0)-endpoint3(0))*j);
+			float yd = endpoint3(1) + ((endpoint4(1)-endpoint3(1))*j);
 
 			float xe = xa + ((xb-xa)*j);
 			float ye = ya + ((yb-ya)*j);
@@ -316,8 +316,8 @@ visualization_msgs::MarkerArray PathPlanning::VisualizeInterpolatedCones() const
 
 	for(const auto &cone : m_leftConesInterpolated)
 		{
-			temp.x = cone[0];
-			temp.y = cone[1];
+			temp.x = cone(0);
+			temp.y = cone(1);
 			rightpoints.points.push_back(temp);	
 		}
 	markerArr.markers.push_back(rightpoints);
@@ -325,16 +325,16 @@ visualization_msgs::MarkerArray PathPlanning::VisualizeInterpolatedCones() const
 
 	for(const auto &cone : m_rightConesInterpolated)
 		{
-			temp.x = cone[0];
-			temp.y = cone[1];
+			temp.x = cone(0);
+			temp.y = cone(1);
 			leftpoints.points.push_back(temp);	
 		}
 	markerArr.markers.push_back(leftpoints);
 	
 	for(const auto &cone : m_leftCones)
 		{
-			temp.x = cone[0];
-			temp.y = cone[1];
+			temp.x = cone(0);
+			temp.y = cone(1);
 			rightpointsBIG.points.push_back(temp);	
 		}
 	markerArr.markers.push_back(rightpointsBIG);
@@ -342,8 +342,8 @@ visualization_msgs::MarkerArray PathPlanning::VisualizeInterpolatedCones() const
 
 	for(const auto &cone : m_rightCones)
 		{
-			temp.x = cone[0];
-			temp.y = cone[1];
+			temp.x = cone(0);
+			temp.y = cone(1);
 			leftpointsBIG.points.push_back(temp);	
 		}
 	markerArr.markers.push_back(leftpointsBIG);
@@ -357,11 +357,11 @@ visualization_msgs::MarkerArray PathPlanning::VisualizeInterpolatedCones() const
     start.scale.y = 0.5;
     start.color.r = 0.7f;
 	start.color.a = 1.0;
-	temp.x = m_rightCones[0][0];
-	temp.y = m_rightCones[0][1];
+	temp.x = m_rightCones[0](0);
+	temp.y = m_rightCones[0](1);
 	start.points.push_back(temp);
-	temp.x = m_leftCones[0][0];
-	temp.y = m_leftCones[0][1];
+	temp.x = m_leftCones[0](0);
+	temp.y = m_leftCones[0](1);
 	start.points.push_back(temp);
 	markerArr.markers.push_back(start);
 
@@ -375,11 +375,11 @@ visualization_msgs::MarkerArray PathPlanning::VisualizeInterpolatedCones() const
     end.color.r = 0.0f;
 	end.color.g = 0.7f;
  	end.color.a = 1.0;
-	temp.x = m_rightCones[m_rightCones.size()-1][0];
-	temp.y = m_rightCones[m_rightCones.size()-1][1];
+	temp.x = m_rightCones[m_rightCones.size()-1](0);
+	temp.y = m_rightCones[m_rightCones.size()-1](1);
 	end.points.push_back(temp);
-	temp.x = m_leftCones[m_leftCones.size()-1][0];
-	temp.y = m_leftCones[m_leftCones.size()-1][1];
+	temp.x = m_leftCones[m_leftCones.size()-1](0);
+	temp.y = m_leftCones[m_leftCones.size()-1](1);
 	end.points.push_back(temp);
 	markerArr.markers.push_back(end);
 
@@ -435,8 +435,8 @@ void PathPlanning::VisualizeRRTPoints()
 
 	for(const auto &node : m_rrtStar.GetNodes())
 	{
-		pointVis.x = node->position[0];
-		pointVis.y = node->position[1];
+		pointVis.x = node->position(0);
+		pointVis.y = node->position(1);
 		nodes.points.push_back(pointVis);	
 	}
 	

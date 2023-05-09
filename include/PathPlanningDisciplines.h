@@ -12,7 +12,8 @@
 #include <sgtdv_msgs/Point2D.h>
 #include <vector>
 #include <map>
-#include "opencv2/core/core.hpp"
+// #include "opencv2/core/core.hpp"
+#include <Eigen/Eigen>
 #include "../include/Messages.h"
 
 #define deg2rad(x) (x*M_PI/180.f)
@@ -48,8 +49,8 @@ public:
     virtual sgtdv_msgs::Point2DArrPtr Do(const PathPlanningMsg &msg);
     
 private:
-   std::vector<cv::Vec2f> m_leftCones;
-    std::vector<cv::Vec2f> m_rightCones;
+   std::vector<Eigen::Vector2f> m_leftCones;
+    std::vector<Eigen::Vector2f> m_rightCones;
     std::map<float, size_t> m_leftDistances;
     std::map<float, size_t> m_rightDistances;
 
@@ -57,8 +58,8 @@ private:
     void SortCones(const PathPlanningMsg &msg);
     void FindMiddlePoints(std::vector<sgtdv_msgs::Point2D> &points);
     bool IsLessOnLeft() const;
-    float Norm(const cv::Vec2f &point) const;
-    cv::Vec2f Rotate90Clockwise(const cv::Vec2f &point) const;
+    float Norm(const Eigen::Vector2f &point) const;
+    Eigen::Vector2f Rotate90Clockwise(const Eigen::Vector2f &point) const;
 };
 
 

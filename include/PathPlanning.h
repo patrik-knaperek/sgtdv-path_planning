@@ -13,7 +13,7 @@
 #include <map>
 #include <chrono>
 
-#include "opencv2/core/core.hpp"
+// #include "opencv2/core/core.hpp"
 
 // ROS
 #include <ros/ros.h>
@@ -49,7 +49,7 @@ public:
 private:
     bool RRTRun();
     void SortCones(const PathPlanningMsg &msg);
-	std::vector<cv::Vec2f> LinearInterpolation(std::vector<cv::Vec2f> points) const;
+	std::vector<Eigen::Vector2f> LinearInterpolation(std::vector<Eigen::Vector2f> points) const;
     sgtdv_msgs::Point2DArr FindMiddlePoints();
     visualization_msgs::MarkerArray VisualizeInterpolatedCones() const;
     void VisualizeRRTPoints();
@@ -65,7 +65,7 @@ private:
 	bool m_once;
     bool m_fullMap;
 
-    std::vector<cv::Vec2f> m_leftCones, m_leftConesInterpolated,  m_rightCones, m_rightConesInterpolated, m_middleLinePoints;
+    std::vector<Eigen::Vector2f> m_leftCones, m_leftConesInterpolated,  m_rightCones, m_rightConesInterpolated, m_middleLinePoints;
     //PathPlanningDiscipline *m_pathPlanningDiscipline = nullptr;
 
     visualization_msgs::MarkerArray m_trajectoryVisMarkers;

@@ -14,5 +14,6 @@ Pre spustenie s rosbagom (.bag file sa musi nachadzat vo folderi /bags):
 roslaunch path_planning_bp path_planning_rosbag.launch bag_name:=YOUR_BAG_FILE
 ```
 
-
+Pri builde pridat
+-DCMAKE_BUILD_TYPE=Release
 
