@@ -35,12 +35,12 @@ public:
 	};
 	typedef std::shared_ptr<Node> NodeSPtr;
 
-	static constexpr float NODE_STEP_SIZE		   = 0.3;
-	static constexpr float END_DIST_THRESHOLD	   = 0.25;
-	static constexpr float RRTSTAR_NEIGHBOR_RADIUS = 5 * NODE_STEP_SIZE;
-	static constexpr float CAR_WIDTH		       = 2.0;
-	static constexpr int   MAX_ITER 			   = 500;
-	static constexpr double ANGLE_TH			   = 0.1 * M_PI;
+	static constexpr float NODE_STEP_SIZE		   = 0.3;					// [m]; distance between parent and child node
+	// static constexpr float END_DIST_THRESHOLD	   = 0.25;
+	static constexpr float RRTSTAR_NEIGHBOR_RADIUS = 5 * NODE_STEP_SIZE;	// [m]; radius for searching neighbor nodes
+	static constexpr float CAR_WIDTH		       = 2.0;					// [m]; minimum distance from track boundary
+	static constexpr int   MAX_ITER 			   = 500;					// maximum number of valid algorithm iterations
+	static constexpr double MAX_ANGLE			   = 0.1 * M_PI;			// [rad]; maximum angle between parent and child node
 
 public:
 	RRTStar();

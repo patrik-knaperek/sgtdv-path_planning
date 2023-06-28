@@ -65,7 +65,7 @@ bool RRTStar::Do()
                     double costNear;
                     for (const auto qNear : Qnear)
 					{
-                        if (std::abs(computeAngleDiff(*qNear, qNew->position)) < ANGLE_TH   // angle restriction
+                        if (std::abs(computeAngleDiff(*qNear, qNew->position)) < MAX_ANGLE   // angle restriction
                             && (costNear = (qNear->cost + PathCost(*qNear, *qNew))) < costMin)
 						{
                             qMin = qNear;
@@ -78,7 +78,7 @@ bool RRTStar::Do()
 
                     for (auto qNear : Qnear)
                     {   // trajectory cost optimization
-                        if(std::abs(computeAngleDiff(*qNew, qNear->position)) < ANGLE_TH    // angle restriction
+                        if(std::abs(computeAngleDiff(*qNew, qNear->position)) < MAX_ANGLE    // angle restriction
                             && (qNew->cost + PathCost(*qNew, *qNear)) < qNear->cost)
                         {
                             NodeSPtr qParent = qNear->parent;
@@ -260,17 +260,17 @@ void RRTStar::NormalizePosition(const Node &qNearest, Eigen::Vector2f *qPos) con
 {
     // angle restriction
     double angleDiff = computeAngleDiff(qNearest, *qPos);
-    if (angleDiff > ANGLE_TH)
+    if (angleDiff > MAX_ANGLE)
     {
-        angleDiff = ANGLE_TH;
-    } else if (angleDiff < -ANGLE_TH)
+        angleDiff = MAX_ANGLE;
+    } else if (angleDiff < -MAX_ANGLE)
     {
-        angleDiff = -ANGLE_TH;
+        angleDiff = -MAX_ANGLE;
     }
     const double angle = qNearest.orientation + angleDiff;
 
-    *qPos = qNearest.position + Eigen::Vector2f(cos(angle), sin(angle)) * NODE_STEP_SIZE;
-    }
+    *qPos = qNearest.position + Eigen::Vector2f(cosf(angle) * NODE_STEP_SIZE, sinf(angle) * NODE_STEP_SIZE);
+}
 
 /**
  * @brief Compute path cost.
