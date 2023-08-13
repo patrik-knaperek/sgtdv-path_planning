@@ -1,0 +1,8 @@
+ref_speed:
+  slow: 2.0
+  fast: 4.0
+
+rrt_conf:
+  car_width: 2.2
+  node_step_size: 0.3
+  max_angle: 0.314

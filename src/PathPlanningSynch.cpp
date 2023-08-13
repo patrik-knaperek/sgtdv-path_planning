@@ -6,8 +6,9 @@
 
 #include "../include/PathPlanningSynch.h"
 
-PathPlanningSynch::PathPlanningSynch()
-    : m_mapReceived(false)
+PathPlanningSynch::PathPlanningSynch(const ros::NodeHandle& handle)
+    : m_pathPlanning(handle)
+    , m_mapReceived(false)
     , m_poseReceived(false)
 {
 

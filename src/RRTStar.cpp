@@ -44,7 +44,7 @@ bool RRTStar::Do()
             NodeSPtr qNearestPtr(FindNearestNode(newPos));
 
             if (qNearestPtr.get() != nullptr
-                && ComputeDistance(newPos, qNearestPtr->position) > NODE_STEP_SIZE  // check minimum distance from closest node
+                && ComputeDistance(newPos, qNearestPtr->position) > m_conf.node_step_size  // check minimum distance from closest node
                 )
             {
                 // compute new node position based on vehicle model restrictions
@@ -65,7 +65,7 @@ bool RRTStar::Do()
                     double costNear;
                     for (const auto qNear : Qnear)
 					{
-                        if (std::abs(computeAngleDiff(*qNear, qNew->position)) < MAX_ANGLE   // angle restriction
+                        if (std::abs(computeAngleDiff(*qNear, qNew->position)) < m_conf.max_angle   // angle restriction
                             && (costNear = (qNear->cost + PathCost(*qNear, *qNew))) < costMin)
 						{
                             qMin = qNear;
@@ -78,7 +78,7 @@ bool RRTStar::Do()
 
                     for (auto qNear : Qnear)
                     {   // trajectory cost optimization
-                        if(std::abs(computeAngleDiff(*qNew, qNear->position)) < MAX_ANGLE    // angle restriction
+                        if(std::abs(computeAngleDiff(*qNew, qNear->position)) < m_conf.max_angle    // angle restriction
                             && (qNew->cost + PathCost(*qNew, *qNear)) < qNear->cost)
                         {
                             NodeSPtr qParent = qNear->parent;
@@ -108,7 +108,7 @@ bool RRTStar::Do()
             }
         }
         m_lastNode = q;
-        if (minDist < RRTSTAR_NEIGHBOR_RADIUS)
+        if (minDist < m_conf.neighbor_radius)
         {
             endReached = true;
         }
@@ -244,7 +244,7 @@ void RRTStar::FindNearNodes(const Eigen::Vector2f point, std::vector<NodeSPtr> *
     for (const auto &node : m_nodes) {
         double dist = ComputeDistance(point, node->position);
         double angle = computeAngleDiff(*node, point);
-        if (dist < RRTSTAR_NEIGHBOR_RADIUS) {
+        if (dist < m_conf.neighbor_radius) {
             (*out_nodes).push_back(node);
         }
     }
@@ -260,16 +260,16 @@ void RRTStar::NormalizePosition(const Node &qNearest, Eigen::Vector2f *qPos) con
 {
     // angle restriction
     double angleDiff = computeAngleDiff(qNearest, *qPos);
-    if (angleDiff > MAX_ANGLE)
+    if (angleDiff > m_conf.max_angle)
     {
-        angleDiff = MAX_ANGLE;
-    } else if (angleDiff < -MAX_ANGLE)
+        angleDiff = m_conf.max_angle;
+    } else if (angleDiff < -m_conf.max_angle)
     {
-        angleDiff = -MAX_ANGLE;
+        angleDiff = -m_conf.max_angle;
     }
     const double angle = qNearest.orientation + angleDiff;
 
-    *qPos = qNearest.position + Eigen::Vector2f(cosf(angle) * NODE_STEP_SIZE, sinf(angle) * NODE_STEP_SIZE);
+    *qPos = qNearest.position + Eigen::Vector2f(cosf(angle) * m_conf.node_step_size, sinf(angle) * m_conf.node_step_size);
 }
 
 /**
@@ -330,7 +330,7 @@ bool RRTStar::isOnTrack(const Eigen::Vector2f targetPoint) const
 		for (const auto &cone : m_outCones ) 
 		{
         	double dist = ComputeDistance(cone, targetPoint);
-        	if (dist < CAR_WIDTH / 2) 
+        	if (dist < m_conf.car_width / 2) 
 			{
             	c = false;
 				break;
@@ -352,7 +352,7 @@ bool RRTStar::isOnTrack(const Eigen::Vector2f targetPoint) const
 			for (const auto &cone : m_inCones ) 
 			{
         		double dist = ComputeDistance(cone, targetPoint);
-        		if (dist < CAR_WIDTH / 2) 
+        		if (dist < m_conf.car_width / 2) 
 				{
             		c = false;
 					break;

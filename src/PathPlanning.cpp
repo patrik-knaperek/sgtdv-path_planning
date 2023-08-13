@@ -6,12 +6,19 @@
 
 #include "../include/PathPlanning.h"
 
-PathPlanning::PathPlanning()
+PathPlanning::PathPlanning(const ros::NodeHandle& handle)
 	: m_isYellowOnLeft(true)
 	, m_once(true)
 	, m_fullMap(false)
 {
-    
+    RRTconf rrtConf;
+	Utils::loadParam(handle, "/ref_speed/slow", &m_params.ref_speed_slow);
+	Utils::loadParam(handle, "/ref_speed/fast", &m_params.ref_speed_fast);
+	Utils::loadParam(handle, "/rrt_conf/car_width", &rrtConf.car_width);
+	Utils::loadParam(handle, "/rrt_conf/node_step_size", &rrtConf.node_step_size);
+	rrtConf.neighbor_radius = 5 * rrtConf.node_step_size;
+	Utils::loadParam(handle, "/rrt_conf/max_angle", &rrtConf.max_angle);
+	m_rrtStar.SetConf(rrtConf);
 }
 
 /**
@@ -73,10 +80,20 @@ void PathPlanning::Do(const PathPlanningMsg &msg)
 
 	sgtdv_msgs::Point2DArr trajectory;
 	if (RRTCompleted)
+	{
 		trajectory = m_rrtStar.GetPath();
+		m_setSpeedMsg.request.data = m_params.ref_speed_fast;
+	}
 	else
+	{
 		trajectory = FindMiddlePoints();
+		m_setSpeedMsg.request.data = m_params.ref_speed_slow;
+	}
 
+	if (!ros::service::call("pathTracking/set_speed", m_setSpeedMsg))
+	{
+		ROS_ERROR("Service \"pathTracking/set_speed\" failed");
+	}
 	m_trajectoryPub.publish(trajectory);
 	VisualizeTrajectory(trajectory);
 	VisualizeRRTPoints();
@@ -213,7 +230,7 @@ sgtdv_msgs::Point2DArr PathPlanning::FindMiddlePoints()
 		m_middleLinePoints.push_back(newPoint);		
     }
 
-	for(size_t i = 0; i < m_middleLinePoints.size()-3; i+=4)
+	for(size_t i = 0; i < m_middleLinePoints.size()-2; i+=4)
 	{	
 
 		Eigen::Vector2f endpoint2 = m_middleLinePoints[i+2];

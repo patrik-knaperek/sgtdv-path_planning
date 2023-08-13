@@ -9,14 +9,15 @@
 
 int main (int argc, char** argv)
 {
-    PathPlanningSynch synchObj;
-
     ros::init(argc, argv, "pathPlanning");
     ros::NodeHandle handle;
+
+    PathPlanningSynch synchObj(handle);
 
     ros::Publisher publisherTrajectory = handle.advertise<sgtdv_msgs::Point2DArr>("pathplanning_trajectory", 1);
     ros::Publisher publisherTrajectoryVisualize = handle.advertise<visualization_msgs::MarkerArray>("pathplanning_trajectory_visualize", 1);
     ros::Publisher publisherInterpolatedCones = handle.advertise<visualization_msgs::MarkerArray>("pathplanning_interpolated_cones", 1);
+    ros::ServiceClient setSpeedClient = handle.serviceClient<sgtdv_msgs::Float32Srv>("pathTracking/set_speed");
     
     synchObj.SetPublisher(publisherTrajectory
                         , publisherTrajectoryVisualize

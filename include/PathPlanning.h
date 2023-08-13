@@ -28,19 +28,25 @@
 #include <sgtdv_msgs/Cone.h>
 #include <sgtdv_msgs/Point2D.h>
 #include <sgtdv_msgs/Point2DArr.h>
+#include <sgtdv_msgs/Float32Srv.h>
+#include "../../SGT_Utils.h"
 
 constexpr float BEZIER_RESOLUTION = 0.125;
 
 class PathPlanning
 {
 public:
-    PathPlanning();
+    PathPlanning(const ros::NodeHandle& handle);
     ~PathPlanning() = default;
 
     void SetPublisher(const ros::Publisher &trajectoryPub
                     , const ros::Publisher &trajectoryVisPub
                     , const ros::Publisher &interpolatedConesPub
                     );
+    void SetServiceClient(const ros::ServiceClient &setSpeedClient)
+    {
+        m_setSpeedClient = setSpeedClient;
+    };
     void Do(const PathPlanningMsg &msg);  
     void YellowOnLeft(bool value);
     void FullMap() { m_fullMap = true; };
@@ -56,11 +62,14 @@ private:
     void VisualizeTrajectory(const sgtdv_msgs::Point2DArr &trajectory);
 
     RRTStar m_rrtStar;
+    Params m_params;
 	
 	float m_timeravg;
 	int m_timeravgcount;
 
     ros::Publisher m_trajectoryPub, m_trajectoryVisPub, m_interpolatedConesPub;
+    ros::ServiceClient m_setSpeedClient;
+    sgtdv_msgs::Float32Srv m_setSpeedMsg;
     bool m_isYellowOnLeft;
 	bool m_once;
     bool m_fullMap;

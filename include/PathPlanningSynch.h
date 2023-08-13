@@ -23,13 +23,18 @@
 class PathPlanningSynch
 {
 public:
-    PathPlanningSynch();
+    PathPlanningSynch(const ros::NodeHandle& handle);
     ~PathPlanningSynch() = default;
 
     void SetPublisher(const ros::Publisher &trajectoryPub
                     , const ros::Publisher &trajectoryVisPub
                     , const ros::Publisher &interpolatedConesPub
                     );
+    void SetServiceClient(const ros::ServiceClient &setSpeedClient)
+    {
+        m_pathPlanning.SetServiceClient(setSpeedClient);
+    };
+
     void Do();
     void UpdateMap(const sgtdv_msgs::ConeArr::ConstPtr &msg);
     void UpdatePose(const sgtdv_msgs::CarPose::ConstPtr &msg);

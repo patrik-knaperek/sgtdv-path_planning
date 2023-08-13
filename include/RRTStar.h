@@ -19,6 +19,7 @@
 
 // SGT DV
 #include <sgtdv_msgs/Point2DArr.h>
+#include "../include/Messages.h"
 
 class RRTStar
 {
@@ -35,17 +36,21 @@ public:
 	};
 	typedef std::shared_ptr<Node> NodeSPtr;
 
-	static constexpr float NODE_STEP_SIZE		   = 0.3;					// [m]; distance between parent and child node
+	// static constexpr float NODE_STEP_SIZE		   = 0.3;					// [m]; distance between parent and child node
 	// static constexpr float END_DIST_THRESHOLD	   = 0.25;
-	static constexpr float RRTSTAR_NEIGHBOR_RADIUS = 5 * NODE_STEP_SIZE;	// [m]; radius for searching neighbor nodes
-	static constexpr float CAR_WIDTH		       = 2.0;					// [m]; minimum distance from track boundary
+	// static constexpr float RRTSTAR_NEIGHBOR_RADIUS = 5 * NODE_STEP_SIZE;	// [m]; radius for searching neighbor nodes
+	// static constexpr float CAR_WIDTH		       = 2.5;					// [m]; minimum distance from track boundary
 	static constexpr int   MAX_ITER 			   = 500;					// maximum number of valid algorithm iterations
-	static constexpr double MAX_ANGLE			   = 0.1 * M_PI;			// [rad]; maximum angle between parent and child node
+	// static constexpr double MAX_ANGLE			   = 0.1 * M_PI;			// [rad]; maximum angle between parent and child node
 
 public:
 	RRTStar();
 	~RRTStar();
 
+	void SetConf(const RRTconf &conf)
+	{
+		m_conf = conf;
+	};
 	bool Do();
 	void Init(const std::vector<Eigen::Vector2f> &outsideCones, const std::vector<Eigen::Vector2f> &insideCones, 
 			const int startIndex, const int endIndex, const Eigen::Vector2f startPosition, const Eigen::Vector2f endPosition);
@@ -66,6 +71,8 @@ private:
 	double ComputeOrientation(const Eigen::Vector2f pFrom, const Eigen::Vector2f pTo) const;
 	double computeAngleDiff(const Node &qFrom, const Eigen::Vector2f pTo) const;
 
+	RRTconf m_conf;
+	
 	std::vector<NodeSPtr> m_nodes, m_pathReverse;
 	
 	std::vector<Eigen::Vector2f> m_inCones, m_outCones;
