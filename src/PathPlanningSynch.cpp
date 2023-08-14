@@ -20,13 +20,17 @@ PathPlanningSynch::PathPlanningSynch(const ros::NodeHandle& handle)
  * @param interpolatedConesPub
  */
 void PathPlanningSynch::SetPublisher(const ros::Publisher &trajectoryPub
+                                #ifdef SGT_VISUALIZATION
                                     , const ros::Publisher &trajectoryVisPub
                                     , const ros::Publisher &interpolatedConesPub
+                                #endif /* SGT_VISUALIZATION */
                                     )
 {
     m_pathPlanning.SetPublisher(trajectoryPub
+                            #ifdef SGT_VISUALIZATION
                                 , trajectoryVisPub
                                 , interpolatedConesPub
+                            #endif /* SGT_VISUALIZATION */
                                 );
 }
 

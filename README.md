@@ -24,7 +24,11 @@ $ catkin build path_planning -DCMAKE_BUILD_TYPE=Release
 ```
 
 ### Compilation configuration
-* `PathPlanning.h`
+* [`SGT_Macros.h`](../SGT_Macros.h)
+	* `SGT_VISUALIZE` : publish intermediate calculations on visualizable topics
+		- `/pathplanning/visualize/interpolated_cones [visualization_msgs/MarkerArray]` - Track boundaries and interpolated cones
+		- `/pathplanning/visualize/rrt [visualization_msgs/MarkerArray]` - RRT nodes and trajectory
+* [`PathPlanning.h`](./include/PathPlanning.h)
 	* `NODE_STEP_SIZE` : [m]; distance between parent and child node
 	* `RRTSTAR_NEIGHBOR_RADIUS` : [m]; radius for searching neighbor nodes
 	* `CAR_WIDTH` : [m]; minimum distance from the track boundary

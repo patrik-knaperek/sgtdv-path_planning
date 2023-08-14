@@ -15,13 +15,18 @@ int main (int argc, char** argv)
     PathPlanningSynch synchObj(handle);
 
     ros::Publisher publisherTrajectory = handle.advertise<sgtdv_msgs::Point2DArr>("pathplanning_trajectory", 1);
-    ros::Publisher publisherTrajectoryVisualize = handle.advertise<visualization_msgs::MarkerArray>("pathplanning_trajectory_visualize", 1);
-    ros::Publisher publisherInterpolatedCones = handle.advertise<visualization_msgs::MarkerArray>("pathplanning_interpolated_cones", 1);
     ros::ServiceClient setSpeedClient = handle.serviceClient<sgtdv_msgs::Float32Srv>("pathTracking/set_speed");
+
+#ifdef SGT_VISUALIZATION
+    ros::Publisher publisherPathPlanningVisualize = handle.advertise<visualization_msgs::MarkerArray>("pathplanning/visualize/rrt", 1);
+    ros::Publisher publisherInterpolatedCones = handle.advertise<visualization_msgs::MarkerArray>("pathplanning/visualize/interpolated_cones", 1);
+#endif /* SGT_VISUALIZATION */
     
     synchObj.SetPublisher(publisherTrajectory
-                        , publisherTrajectoryVisualize
+                    #ifdef SGT_VISUALIZATION
+                        , publisherPathPlanningVisualize
                         , publisherInterpolatedCones
+                    #endif /* SGT_VISUALIZATION */
                         );
 
     ros::Subscriber mapSub = handle.subscribe("slam/map", 1, &PathPlanningSynch::UpdateMap, &synchObj);

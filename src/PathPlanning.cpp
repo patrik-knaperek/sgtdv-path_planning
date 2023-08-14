@@ -27,13 +27,17 @@ PathPlanning::PathPlanning(const ros::NodeHandle& handle)
  * @param interpolatedConesPub
  */
 void PathPlanning::SetPublisher(const ros::Publisher &trajectoryPub
-								, const ros::Publisher &trajectoryVisPub
+							#ifdef SGT_VISUALIZATION
+								, const ros::Publisher &pathPlanningVisPub
 								, const ros::Publisher &interpolatedConesPub
+							#endif /* SGT_VISUALIZATION */
 								)
 {
     m_trajectoryPub = trajectoryPub;
-	m_trajectoryVisPub = trajectoryVisPub;
-    m_interpolatedConesPub = interpolatedConesPub;
+#ifdef SGT_VISUALIZATION
+    m_pathPlanningVisPub = pathPlanningVisPub;
+	m_interpolatedConesPub = interpolatedConesPub;
+#endif /* SGT_VISUALIZATION */
 	}
 
 /*void PathPlanning::SetDiscipline(Discipline discipline)
@@ -70,7 +74,9 @@ void PathPlanning::Do(const PathPlanningMsg &msg)
 	m_leftConesInterpolated = LinearInterpolation(m_leftCones);
 	m_rightConesInterpolated = LinearInterpolation(m_rightCones);
 	
-	m_interpolatedConesPub.publish(VisualizeInterpolatedCones());
+#ifdef SGT_VISUALIZATION
+	VisualizeInterpolatedCones();
+#endif /* SGT_VISUALIZATION */
 	
 	bool RRTCompleted(false);
 	if(m_fullMap)
@@ -95,10 +101,10 @@ void PathPlanning::Do(const PathPlanningMsg &msg)
 		ROS_ERROR("Service \"pathTracking/set_speed\" failed");
 	}
 	m_trajectoryPub.publish(trajectory);
-	VisualizeTrajectory(trajectory);
+	
+#ifdef SGT_VISUALIZATION
 	VisualizeRRTPoints();
-
-	m_trajectoryVisPub.publish(m_trajectoryVisMarkers);
+#endif /* SGT_VISUALIZATION */
 }
 
 /**
@@ -128,9 +134,9 @@ bool PathPlanning::RRTRun()
 	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
 	m_timeravg += duration.count()/ 1000000.f;
 	m_timeravgcount +=1;
-	ROS_INFO("\nRRT Timer: %f s", m_timeravg/m_timeravgcount);
-	ROS_INFO("Path jumps: %ld", m_rrtStar.GetPath().points.size());
-	ROS_INFO("Total nodes: %ld\n",m_rrtStar.GetNodes().size());
+	ROS_DEBUG("\nRRT Timer: %f s", m_timeravg/m_timeravgcount);
+	ROS_DEBUG("Path jumps: %ld", m_rrtStar.GetPath().points.size());
+	ROS_DEBUG("Total nodes: %ld\n",m_rrtStar.GetNodes().size());
 
 	return endReached;	
 }
@@ -277,11 +283,12 @@ sgtdv_msgs::Point2DArr PathPlanning::FindMiddlePoints()
    return trajectory;	
 }
 
+#ifdef SGT_VISUALIZATION
 /**
  * @brief Publishing message for sorted and interpolated cone data.
  * @return
  */
-visualization_msgs::MarkerArray PathPlanning::VisualizeInterpolatedCones() const
+void PathPlanning::VisualizeInterpolatedCones()
 {	
 	visualization_msgs::MarkerArray markerArr;
 	geometry_msgs::Point temp;
@@ -400,36 +407,7 @@ visualization_msgs::MarkerArray PathPlanning::VisualizeInterpolatedCones() const
 	end.points.push_back(temp);
 	markerArr.markers.push_back(end);
 
-
-	return markerArr;
-}
-
-void PathPlanning::VisualizeTrajectory(const sgtdv_msgs::Point2DArr &trajectory)
-{
-	m_trajectoryVisMarkers.markers.clear();
-
-	visualization_msgs::Marker trajectoryVis;
-    trajectoryVis.type = visualization_msgs::Marker::LINE_STRIP;
-    trajectoryVis.header.frame_id = "map";
-    trajectoryVis.id = 0;
-	trajectoryVis.ns = "trajectory";
-    trajectoryVis.scale.x = 0.2;
-    trajectoryVis.scale.y = 0.2;
-    trajectoryVis.color.r = 1.0f;
-    trajectoryVis.color.a = 1.0;
-	trajectoryVis.pose.orientation.w = 1.0;
-
-    trajectoryVis.points.reserve(trajectory.points.size());
-    geometry_msgs::Point pointVis;
-
-	for (auto &point : trajectory.points)
-	{
-		pointVis.x = point.x;
-		pointVis.y = point.y;
-		trajectoryVis.points.push_back(pointVis);
-	}
-
-	m_trajectoryVisMarkers.markers.emplace_back(trajectoryVis);
+	m_interpolatedConesPub.publish(markerArr);
 }
 
 /**
@@ -438,45 +416,58 @@ void PathPlanning::VisualizeTrajectory(const sgtdv_msgs::Point2DArr &trajectory)
  */
 void PathPlanning::VisualizeRRTPoints()
 {
-    geometry_msgs::Point pointVis;
+    static visualization_msgs::MarkerArray trajectoryVisMarkers;
+	trajectoryVisMarkers.markers.clear();
+	geometry_msgs::Point pointVis;
 
-	visualization_msgs::Marker nodes;
-    nodes.type = visualization_msgs::Marker::POINTS;
-    nodes.header.frame_id = "map";
-	nodes.id = 2;
-	nodes.ns = "RRT nodes";
-    nodes.scale.x = 0.15;
-    nodes.scale.y = 0.15;
-    nodes.color.g = 1.0f;
- 	nodes.color.a = 1.0;
+	visualization_msgs::Marker nodesMarker;
+    nodesMarker.type = visualization_msgs::Marker::POINTS;
+	nodesMarker.action = visualization_msgs::Marker::ADD;
+    nodesMarker.header.frame_id = "map";
+	nodesMarker.id = 0;
+	nodesMarker.ns = "RRT nodes";
+    nodesMarker.scale.x = 0.15;
+    nodesMarker.scale.y = 0.15;
+    nodesMarker.color.g = 1.0f;
+ 	nodesMarker.color.a = 1.0;
+	nodesMarker.pose.orientation.w = 1.0;
+	nodesMarker.pose.position.z = -0.2;
 
-	for(const auto &node : m_rrtStar.GetNodes())
+	auto nodes = m_rrtStar.GetNodes();
+	nodesMarker.points.reserve(nodes.size());
+	for(const auto &node : nodes)
 	{
 		pointVis.x = node->position(0);
 		pointVis.y = node->position(1);
-		nodes.points.push_back(pointVis);	
+		nodesMarker.points.push_back(pointVis);	
 	}
 	
-	m_trajectoryVisMarkers.markers.emplace_back(nodes);
+	trajectoryVisMarkers.markers.emplace_back(nodesMarker);
 	
 
 	visualization_msgs::Marker trajectory;
     trajectory.type = visualization_msgs::Marker::LINE_STRIP;
+	trajectory.action = visualization_msgs::Marker::ADD;
     trajectory.header.frame_id = "map";
-	trajectory.id = 3;
+	trajectory.id = 1;
 	trajectory.ns = "RRT trajectory";
     trajectory.scale.x = 0.2;
     trajectory.scale.y = 0.2;
     trajectory.color.g = 1.0f;
  	trajectory.color.a = 1.0;
 	trajectory.pose.orientation.w = 1.0;
+	trajectory.pose.position.z = -0.2;
     
-	for(const auto &pathIt : m_rrtStar.GetPath().points)
+	auto path = m_rrtStar.GetPath().points;
+	trajectory.points.reserve(path.size());
+	for(const auto &pathIt : path)
 	{
 		pointVis.x = pathIt.x;
 		pointVis.y = pathIt.y;
 		trajectory.points.push_back(pointVis);
 	}
 	
-	m_trajectoryVisMarkers.markers.emplace_back(trajectory);
+	trajectoryVisMarkers.markers.emplace_back(trajectory);
+	m_pathPlanningVisPub.publish(trajectoryVisMarkers);
 }
+#endif /* SGT_VISUALIZATION */

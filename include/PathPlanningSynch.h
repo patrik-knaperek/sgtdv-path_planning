@@ -27,8 +27,10 @@ public:
     ~PathPlanningSynch() = default;
 
     void SetPublisher(const ros::Publisher &trajectoryPub
+                #ifdef SGT_VISUALIZATION
                     , const ros::Publisher &trajectoryVisPub
                     , const ros::Publisher &interpolatedConesPub
+                #endif /* SGT_VISUALIZATION */
                     );
     void SetServiceClient(const ros::ServiceClient &setSpeedClient)
     {

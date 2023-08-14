@@ -30,6 +30,7 @@
 #include <sgtdv_msgs/Point2DArr.h>
 #include <sgtdv_msgs/Float32Srv.h>
 #include "../../SGT_Utils.h"
+#include "../../SGT_Macros.h"
 
 constexpr float BEZIER_RESOLUTION = 0.125;
 
@@ -40,8 +41,10 @@ public:
     ~PathPlanning() = default;
 
     void SetPublisher(const ros::Publisher &trajectoryPub
-                    , const ros::Publisher &trajectoryVisPub
+                #ifdef SGT_VISUALIZATION
+                    , const ros::Publisher &pathPlanningVisPub
                     , const ros::Publisher &interpolatedConesPub
+                #endif /* SGT_VISUALIZATION */
                     );
     void SetServiceClient(const ros::ServiceClient &setSpeedClient)
     {
@@ -57,17 +60,19 @@ private:
     void SortCones(const PathPlanningMsg &msg);
 	std::vector<Eigen::Vector2f> LinearInterpolation(std::vector<Eigen::Vector2f> points) const;
     sgtdv_msgs::Point2DArr FindMiddlePoints();
-    visualization_msgs::MarkerArray VisualizeInterpolatedCones() const;
-    void VisualizeRRTPoints();
-    void VisualizeTrajectory(const sgtdv_msgs::Point2DArr &trajectory);
 
+#ifdef SGT_VISUALIZATION
+    void VisualizeInterpolatedCones();
+    void VisualizeRRTPoints();
+#endif /* SGT_VISUALIZATION */
+    
     RRTStar m_rrtStar;
     Params m_params;
 	
 	float m_timeravg;
 	int m_timeravgcount;
 
-    ros::Publisher m_trajectoryPub, m_trajectoryVisPub, m_interpolatedConesPub;
+    ros::Publisher m_trajectoryPub;
     ros::ServiceClient m_setSpeedClient;
     sgtdv_msgs::Float32Srv m_setSpeedMsg;
     bool m_isYellowOnLeft;
@@ -77,5 +82,7 @@ private:
     std::vector<Eigen::Vector2f> m_leftCones, m_leftConesInterpolated,  m_rightCones, m_rightConesInterpolated, m_middleLinePoints;
     //PathPlanningDiscipline *m_pathPlanningDiscipline = nullptr;
 
-    visualization_msgs::MarkerArray m_trajectoryVisMarkers;
+#ifdef SGT_VISUALIZATION
+    ros::Publisher m_interpolatedConesPub, m_pathPlanningVisPub;
+#endif /* SGT_VISUALIZATION */
 };
