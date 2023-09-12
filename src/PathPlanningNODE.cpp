@@ -31,7 +31,7 @@ int main (int argc, char** argv)
 
     ros::Subscriber mapSub = handle.subscribe("slam/map", 1, &PathPlanningSynch::UpdateMap, &synchObj);
     ros::Subscriber poseSub = handle.subscribe("slam/pose", 1, &PathPlanningSynch::UpdatePose, &synchObj);
-    ros::Subscriber loopCloseSub = handle.subscribe("slam_loop_closure", 1, &PathPlanningSynch::LoopClosureCallback, &synchObj);
+    ros::Subscriber loopCloseSub = handle.subscribe("slam/loop_closure", 1, &PathPlanningSynch::LoopClosureCallback, &synchObj);
 
     //if (/*arg from launchfile*/true)
     //{
