@@ -102,10 +102,10 @@ void PathPlanning::Do(const PathPlanningMsg &msg)
 	}
 
 	// when used with path_tracking
-	/*if (!ros::service::call("pathTracking/set_speed", m_setSpeedMsg))
+	if (!ros::service::call("pathTracking/set_speed", m_setSpeedMsg))
 	{
 		ROS_ERROR("Service \"pathTracking/set_speed\" failed");
-	}*/
+	}
 	m_trajectoryPub.publish(trajectory);
 	
 #ifdef SGT_VISUALIZATION
