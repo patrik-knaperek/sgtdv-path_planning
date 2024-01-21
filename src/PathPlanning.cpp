@@ -71,6 +71,11 @@ void PathPlanning::Do(const PathPlanningMsg &msg)
     //m_publisher.publish(m_pathPlanningDiscipline->Do(msg));
 
     SortCones(msg);
+	if (!m_leftCones.size() || !m_rightCones.size())
+	{
+		ROS_WARN("Invalid map obtained. Cannot distinguish track borders.");
+		return;
+	}
 	m_leftConesInterpolated = LinearInterpolation(m_leftCones);
 	m_rightConesInterpolated = LinearInterpolation(m_rightCones);
 	
