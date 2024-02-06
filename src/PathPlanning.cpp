@@ -169,10 +169,26 @@ void PathPlanning::SortCones(const PathPlanningMsg &msg)
             	case 'y':
 				case 1 :
                     m_rightCones.push_back(conePos);
+					{
+						if (m_rightCones.size() > 0)
+						{
+							const double d1 = (*std::prev(m_rightCones.end(), 1) - *std::prev(m_rightCones.end(), 3)).norm();
+							const double d2 = (*std::prev(m_rightCones.end(), 2) - *std::prev(m_rightCones.end(), 3)).norm();
+							if (d1 < d2) std::swap(*std::prev(m_rightCones.end(),1), *std::prev(m_rightCones.end(),2));
+						}
+					}
                     break;
                 case 'b':
 				case 2 :
                     m_leftCones.push_back(conePos);
+					{
+						if (m_leftCones.size() > 0)
+						{
+							const double d1 = (*std::prev(m_leftCones.end(), 1) - *std::prev(m_leftCones.end(), 3)).norm();
+							const double d2 = (*std::prev(m_leftCones.end(), 2) - *std::prev(m_leftCones.end(), 3)).norm();
+							if (d1 < d2) std::swap(*std::prev(m_leftCones.end(),1), *std::prev(m_leftCones.end(),2));
+						}
+					}
                     break;
                 case 's':
 				case 'g':
@@ -204,10 +220,23 @@ std::vector<Eigen::Vector2f> PathPlanning::LinearInterpolation(std::vector<Eigen
 		const float maxDist = sqrt((pow(points[i+1](0) - points[i](0), 2) + pow(points[i+1](1) - points[i](1), 2)) * 1.0);
 		float step = BEZIER_RESOLUTION;
 
-		Eigen::Vector2f endpoint = points[i+1];
-		
-		// closing cone loop - last cone is the first cone
-		if((i+1) == points.size()) endpoint = points[0];	
+		Eigen::Vector2f endpoint;
+		if (i + 1 < points.size())
+		{
+			endpoint = points[i+1];
+		}
+		else
+		{
+			// closing cone loop - last cone is the first cone
+			if (m_fullMap)
+			{
+				endpoint = points[0];
+			}
+			else
+			{
+				endpoint << 2 * points[i][0] - points[i-1][0], 2 * points[i][1] - points[i-1][1];
+			}
+		}
 
 		if(maxDist > 6) step /=2;
 
@@ -218,9 +247,6 @@ std::vector<Eigen::Vector2f> PathPlanning::LinearInterpolation(std::vector<Eigen
 			temp_pts.push_back(temp);
 		}
 	}	
-	temp(0) = points[0](0);
-	temp(1) = points[0](1);
-	temp_pts.push_back(temp);
 
     return temp_pts; 
 }
@@ -236,7 +262,7 @@ sgtdv_msgs::Point2DArr PathPlanning::FindMiddlePoints()
 
     m_middleLinePoints.clear();
 
-    for (size_t i = 0; i < m_rightConesInterpolated.size(); i++)
+    for (size_t i = 0; i < std::min(m_rightConesInterpolated.size(), m_leftConesInterpolated.size()); i++)
     {
 		Eigen::Vector2f newPoint = ((m_leftConesInterpolated[i] + m_rightConesInterpolated[i]) / 2.f);
 		m_middleLinePoints.push_back(newPoint);		

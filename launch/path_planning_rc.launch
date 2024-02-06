@@ -6,15 +6,4 @@
     name="pathPlanning" 
     output="screen"
   />
-  <!--<node
-    pkg="rviz"
-    type="rviz"
-    name="rviz" 
-    args="-d $(find path_planning)/rviz/config.rviz"
-  />-->
-
-  <node pkg="rosservice" 
-    type="rosservice" 
-    name="set_fusion_log_level" 
-    args="call /fusion/set_logger_level 'ros.pathPlanning' 'info'" />
 </launch> 

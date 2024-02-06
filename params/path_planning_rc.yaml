@@ -1,6 +1,6 @@
 ref_speed:
-  slow: 0.35
-  fast: 0.8
+  slow: 0.5
+  fast: 1.0
 
 rrt_conf:
   car_width: 0.5
