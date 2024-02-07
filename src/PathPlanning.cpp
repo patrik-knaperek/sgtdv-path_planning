@@ -68,7 +68,14 @@ void PathPlanning::YellowOnLeft(bool value)
  */
 void PathPlanning::Do(const PathPlanningMsg &msg)
 {
-    //m_publisher.publish(m_pathPlanningDiscipline->Do(msg));
+#ifdef SGT_DEBUG_STATE
+	sgtdv_msgs::DebugState state;
+	state.stamp = ros::Time::now();
+	state.workingState = 1;
+	m_visDebugPublisher.publish(state);
+#endif // SGT_DEBUG_STATE
+	
+	//m_publisher.publish(m_pathPlanningDiscipline->Do(msg));
 
     SortCones(msg);
 	if (!m_leftCones.size() || !m_rightCones.size())
@@ -111,6 +118,12 @@ void PathPlanning::Do(const PathPlanningMsg &msg)
 #ifdef SGT_VISUALIZATION
 	VisualizeRRTPoints();
 #endif /* SGT_VISUALIZATION */
+#ifdef SGT_DEBUG_STATE
+	state.stamp = ros::Time::now();
+	state.workingState = 0;
+	state.numOfCones = trajectory.points.size();
+	m_visDebugPublisher.publish(state);
+#endif // SGT_DEBUG_STATE
 }
 
 /**
@@ -170,7 +183,7 @@ void PathPlanning::SortCones(const PathPlanningMsg &msg)
 				case 1 :
                     m_rightCones.push_back(conePos);
 					{
-						if (m_rightCones.size() > 0)
+						if (m_rightCones.size() > 2)
 						{
 							const double d1 = (*std::prev(m_rightCones.end(), 1) - *std::prev(m_rightCones.end(), 3)).norm();
 							const double d2 = (*std::prev(m_rightCones.end(), 2) - *std::prev(m_rightCones.end(), 3)).norm();
@@ -182,7 +195,7 @@ void PathPlanning::SortCones(const PathPlanningMsg &msg)
 				case 2 :
                     m_leftCones.push_back(conePos);
 					{
-						if (m_leftCones.size() > 0)
+						if (m_leftCones.size() > 2)
 						{
 							const double d1 = (*std::prev(m_leftCones.end(), 1) - *std::prev(m_leftCones.end(), 3)).norm();
 							const double d2 = (*std::prev(m_leftCones.end(), 2) - *std::prev(m_leftCones.end(), 3)).norm();

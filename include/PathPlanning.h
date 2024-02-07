@@ -29,6 +29,7 @@
 #include <sgtdv_msgs/Point2D.h>
 #include <sgtdv_msgs/Point2DArr.h>
 #include <sgtdv_msgs/Float32Srv.h>
+#include <sgtdv_msgs/DebugState.h>
 #include "../../SGT_Utils.h"
 #include "../../SGT_Macros.h"
 
@@ -54,6 +55,10 @@ public:
     void YellowOnLeft(bool value);
     void FullMap() { m_fullMap = true; };
     //void SetDiscipline(Discipline discipline);
+
+#ifdef SGT_DEBUG_STATE
+    void SetVisDebugPublisher(const ros::Publisher& publisher) { m_visDebugPublisher = publisher; };
+#endif
 
 private:
     bool RRTRun();
@@ -85,4 +90,7 @@ private:
 #ifdef SGT_VISUALIZATION
     ros::Publisher m_interpolatedConesPub, m_pathPlanningVisPub;
 #endif /* SGT_VISUALIZATION */
+#ifdef SGT_DEBUG_STATE
+    ros::Publisher m_visDebugPublisher;
+#endif
 };

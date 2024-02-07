@@ -44,6 +44,10 @@ public:
     void YellowOnLeft(bool value);
     //void SetDiscipline(Discipline discipline);
 
+#ifdef SGT_DEBUG_STATE
+    void setVisDebugPublisher(ros::Publisher publisher) { m_pathPlanning.SetVisDebugPublisher(publisher); };
+#endif
+
 private:
     PathPlanning m_pathPlanning;   
     PathPlanningMsg m_pathPlanningMsg;

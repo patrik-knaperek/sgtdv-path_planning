@@ -17,6 +17,11 @@ int main (int argc, char** argv)
     ros::Publisher publisherTrajectory = handle.advertise<sgtdv_msgs::Point2DArr>("pathplanning_trajectory", 1);
     ros::ServiceClient setSpeedClient = handle.serviceClient<sgtdv_msgs::Float32Srv>("pathTracking/set_speed");
 
+#ifdef SGT_DEBUG_STATE
+	ros::Publisher pathplanning_debug_state_publisher = handle.advertise<sgtdv_msgs::DebugState>("pathplanning_debug_state", 10);
+	synchObj.setVisDebugPublisher(pathplanning_debug_state_publisher);
+#endif
+
 #ifdef SGT_VISUALIZATION
     ros::Publisher publisherPathPlanningVisualize = handle.advertise<visualization_msgs::MarkerArray>("pathplanning/visualize/rrt", 1);
     ros::Publisher publisherInterpolatedCones = handle.advertise<visualization_msgs::MarkerArray>("pathplanning/visualize/interpolated_cones", 1);
