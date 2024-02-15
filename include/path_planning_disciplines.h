@@ -14,7 +14,7 @@
 #include <map>
 // #include "opencv2/core/core.hpp"
 #include <Eigen/Eigen>
-#include "../include/Messages.h"
+#include "../include/messages.h"
 
 #define deg2rad(x) (x*M_PI/180.f)
 
@@ -29,14 +29,14 @@ enum Discipline
 class PathPlanningDiscipline
 {
 public:
-    virtual sgtdv_msgs::Point2DArrPtr Do(const PathPlanningMsg &msg) = 0;  
-    void YellowOnLeft(bool value);
+    virtual sgtdv_msgs::Point2DArrPtr update(const PathPlanningMsg &msg) = 0;  
+    void yellowOnLeft(bool value);
 
 protected:
     PathPlanningDiscipline();
     ~PathPlanningDiscipline();
 
-    bool m_isYellowOnLeft;
+    bool is_yellow_on_left_;
 };
 
 
@@ -46,20 +46,20 @@ public:
     UnknownTrack();
     ~UnknownTrack();
 
-    virtual sgtdv_msgs::Point2DArrPtr Do(const PathPlanningMsg &msg);
+    virtual sgtdv_msgs::Point2DArrPtr update(const PathPlanningMsg &msg);
     
 private:
-   std::vector<Eigen::Vector2f> m_leftCones;
-    std::vector<Eigen::Vector2f> m_rightCones;
-    std::map<float, size_t> m_leftDistances;
-    std::map<float, size_t> m_rightDistances;
+   std::vector<Eigen::Vector2f> left_cones_;
+    std::vector<Eigen::Vector2f> right_cones_;
+    std::map<float, size_t> left_distances_;
+    std::map<float, size_t> right_distances_;
 
-    void Clear();
-    void SortCones(const PathPlanningMsg &msg);
-    void FindMiddlePoints(std::vector<sgtdv_msgs::Point2D> &points);
-    bool IsLessOnLeft() const;
-    float Norm(const Eigen::Vector2f &point) const;
-    Eigen::Vector2f Rotate90Clockwise(const Eigen::Vector2f &point) const;
+    void clear();
+    void sortCones(const PathPlanningMsg &msg);
+    void findMiddlePoints(std::vector<sgtdv_msgs::Point2D> &points);
+    bool isLessOnLeft() const;
+    float norm(const Eigen::Vector2f &point) const;
+    Eigen::Vector2f rotate90Clockwise(const Eigen::Vector2f &point) const;
 };
 
 
@@ -75,5 +75,5 @@ public:
     Skidpad();
     ~Skidpad();
 
-    virtual sgtdv_msgs::Point2DArrPtr Do(const PathPlanningMsg &msg);
+    virtual sgtdv_msgs::Point2DArrPtr update(const PathPlanningMsg &msg);
 };

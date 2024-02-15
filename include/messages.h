@@ -12,8 +12,8 @@
 
 struct PathPlanningMsg
 {
-    sgtdv_msgs::CarPose::ConstPtr carPose;
-    sgtdv_msgs::ConeArr::ConstPtr coneMap;
+    sgtdv_msgs::CarPose::ConstPtr car_pose;
+    sgtdv_msgs::ConeArr::ConstPtr cone_map;
 };
 
 struct Params

@@ -12,7 +12,7 @@ ___
 The implementation consists of 2 algorithms. For **reactive navigation** (first lap, unknown map), **Lagrange interpolating polynomial** method is used. The same amount of cones on both side of track is asumed, which isn't however guaranteed by the rules. For **global navigation** (known map), **RRT\*** finds the shortest path through the track, considering given constraints.
 
 ### Related packages
-* [`slam_sim_interface`](../simulation_interface/slam_sim_interface/README.md)
+* [`slam_SI`](../simulation_interface/slam_SI/README.md)
 
 ### Referencies
 * [S. MAZÚR: Path Planning for Autonomous Formula Student Vehicle. (Bachelor's thesis)](https://drive.google.com/file/d/17erZrSe4Bqdqr1wfQmzG4VMhgwLZWuhS/view?usp=drive_link)
@@ -49,7 +49,7 @@ $ roslaunch path_planning_bp path_planning.launch
 ```sh
 $ roslaunch path_planning_bp path_planning_rosbag.launch bag_name:=YOUR_BAG_FILE
 ```
-* alongside FSSIM (the `slam_sim_interface` package has to be built first)
+* alongside FSSIM (the `slam_SI` package has to be built first)
 ```sh
 $ roslaunch path_planning path_planning_sim.launch
 ```

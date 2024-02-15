@@ -4,29 +4,29 @@
 /*****************************************************/
 
 
-#include "../include/PathPlanningSynch.h"
+#include "../include/path_planning_synch.h"
 
 PathPlanningSynch::PathPlanningSynch(const ros::NodeHandle& handle)
-    : m_pathPlanning(handle)
-    , m_mapReceived(false)
-    , m_poseReceived(false)
+    : path_planning_obj_(handle)
+    , map_received_(false)
+    , pose_received_(false)
 {
 
 }
 
 /**
  * @brief Seting ROS publishers.
- * @param trajectoryPub
- * @param interpolatedConesPub
+ * @param trajectory_pub
+ * @param interpolated_cones_pub
  */
-void PathPlanningSynch::SetPublisher(const ros::Publisher &trajectoryPub
+void PathPlanningSynch::setPublisher(const ros::Publisher &trajectoryPub
                                 #ifdef SGT_VISUALIZATION
                                     , const ros::Publisher &trajectoryVisPub
                                     , const ros::Publisher &interpolatedConesPub
                                 #endif /* SGT_VISUALIZATION */
                                     )
 {
-    m_pathPlanning.SetPublisher(trajectoryPub
+    path_planning_obj_.setPublisher(trajectoryPub
                             #ifdef SGT_VISUALIZATION
                                 , trajectoryVisPub
                                 , interpolatedConesPub
@@ -36,15 +36,15 @@ void PathPlanningSynch::SetPublisher(const ros::Publisher &trajectoryPub
 
 /**
  * @brief Main function in class.
- * @param incomingROSMsg
+ * @param incoming_ros_msg
  */
-void PathPlanningSynch::Do()
+void PathPlanningSynch::update()
 {
-    if (m_poseReceived && m_mapReceived)
+    if (pose_received_ && map_received_)
     {
-        m_mapReceived = false;
-        m_poseReceived = false;
-        m_pathPlanning.Do(m_pathPlanningMsg);
+        map_received_ = false;
+        pose_received_ = false;
+        path_planning_obj_.update(path_planning_msg_);
     }
     else
     {
@@ -54,43 +54,43 @@ void PathPlanningSynch::Do()
 
 /**
  * @brief Read SLAM map message.
- * @param SLAMMapMsg
+ * @param slam_map_msg
  */
-void PathPlanningSynch::UpdateMap(const sgtdv_msgs::ConeArr::ConstPtr &msg)
+void PathPlanningSynch::updateMap(const sgtdv_msgs::ConeArr::ConstPtr &msg)
 {
     if (!msg->cones.empty())
     {
-        m_pathPlanningMsg.coneMap = msg;
-        m_mapReceived = true;
-        Do();
+        path_planning_msg_.cone_map = msg;
+        map_received_ = true;
+        update();
     }
     else
-        m_mapReceived = false;
+        map_received_ = false;
 }
 
-void PathPlanningSynch::LoopClosureCallback(const std_msgs::Empty::ConstPtr &msg)
+void PathPlanningSynch::loopClosureCallback(const std_msgs::Empty::ConstPtr &msg)
 {
-    m_pathPlanning.FullMap();
+    path_planning_obj_.fullMap();
 }
 
 /**
  * @brief Read car position message.
- * @param carPoseMsg
+ * @param car_pose_msg
  */
-void PathPlanningSynch::UpdatePose(const sgtdv_msgs::CarPose::ConstPtr &msg)
+void PathPlanningSynch::updatePose(const sgtdv_msgs::CarPose::ConstPtr &msg)
 {
-    m_pathPlanningMsg.carPose = msg;
-    m_poseReceived = true;
-    Do();
+    path_planning_msg_.car_pose = msg;
+    pose_received_ = true;
+    update();
 }
 
 /**
  * @brief Swap color of cones in arrays.
- * @param isYellowOnLeft
+ * @param is_yellow_on_left
  */
-void PathPlanningSynch::YellowOnLeft(bool value)
+void PathPlanningSynch::yellowOnLeft(bool value)
 {
-    m_pathPlanning.YellowOnLeft(value);
+    path_planning_obj_.yellowOnLeft(value);
 }
 
 /*void PathPlanningSynch::SetDiscipline(Discipline discipline)

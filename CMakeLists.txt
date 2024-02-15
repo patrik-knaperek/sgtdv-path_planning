@@ -29,11 +29,11 @@ include_directories(
 
 add_executable(
   ${PROJECT_NAME} 
-  src/PathPlanningNODE.cpp 
-  src/PathPlanning.cpp 
-  src/PathPlanningSynch.cpp 
-  src/PathPlanningDisciplines.cpp
-  src/RRTStar.cpp
+  src/path_planning_node.cpp 
+  src/path_planning.cpp 
+  src/path_planning_synch.cpp 
+  src/path_planning_disciplines.cpp
+  src/rrt_star.cpp
 )
 
 target_link_libraries(path_planning
