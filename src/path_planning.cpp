@@ -6,38 +6,25 @@
 
 #include "../include/path_planning.h"
 
-PathPlanning::PathPlanning(const ros::NodeHandle& handle):
+PathPlanning::PathPlanning(ros::NodeHandle& handle) :
+  /* ROS interface init */
+  trajectory_pub_(handle.advertise<sgtdv_msgs::Point2DArr>("pathplanning_trajectory", 1)),
+  set_speed_client_(handle.serviceClient<sgtdv_msgs::Float32Srv>("pathTracking/set_speed")),
+#ifdef SGT_VISUALIZATION
+  interpolated_cones_pub_(handle.advertise<visualization_msgs::MarkerArray>("pathplanning/visualize/interpolated_cones", 1)),
+  rrt_vis_pub_(handle.advertise<visualization_msgs::MarkerArray>("pathplanning/visualize/rrt", 1)),
+#endif /* SGT_VISUALIZATION */
+#ifdef SGT_DEBUG_STATE
+  vis_debug_publisher_(handle.advertise<sgtdv_msgs::DebugState>("pathplanning_debug_state", 10)),
+#endif
+
+  rrt_star_obj_(handle),
   is_yellow_on_left_(true),
   once_(true),
   full_map_(false)
 {
-  RRTconf rrtConf;
   Utils::loadParam(handle, "/ref_speed/slow", &params_.ref_speed_slow);
   Utils::loadParam(handle, "/ref_speed/fast", &params_.ref_speed_fast);
-  Utils::loadParam(handle, "/rrt_conf/car_width", &rrtConf.car_width);
-  Utils::loadParam(handle, "/rrt_conf/node_step_size", &rrtConf.node_step_size);
-  rrtConf.neighbor_radius = 5 * rrtConf.node_step_size;
-  Utils::loadParam(handle, "/rrt_conf/max_angle", &rrtConf.max_angle);
-  rrt_star_obj_.setConf(rrtConf);
-}
-
-/**
- * @brief Seting ROS publishers.
- * @param trajectory_pub
- * @param interpolated_cones_pub
- */
-void PathPlanning::setPublisher(const ros::Publisher &trajectoryPub
-                            #ifdef SGT_VISUALIZATION
-                              , const ros::Publisher &pathPlanningVisPub
-                              , const ros::Publisher &interpolatedConesPub
-                            #endif /* SGT_VISUALIZATION */
-                                )
-{
-  trajectory_pub_ = trajectoryPub;
-#ifdef SGT_VISUALIZATION
-  path_planning_vis_pub_ = pathPlanningVisPub;
-  interpolated_cones_pub_ = interpolatedConesPub;
-#endif /* SGT_VISUALIZATION */
 }
 
 /*void PathPlanning::SetDiscipline(Discipline discipline)
@@ -512,6 +499,6 @@ void PathPlanning::visualizeRRTPoints()
   }
 
   trajectory_vis_markers.markers.emplace_back(trajectory);
-  path_planning_vis_pub_.publish(trajectory_vis_markers);
+  rrt_vis_pub_.publish(trajectory_vis_markers);
 }
 #endif /* SGT_VISUALIZATION */

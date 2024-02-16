@@ -3,6 +3,8 @@
 /* Authors: Samuel Mazur, Patrik Knaperek
 /*****************************************************/
 
+#pragma once
+
 /* C++ */
 #include <stdlib.h>
 #include <iostream>
@@ -20,6 +22,7 @@
 /* SGT DV */
 #include <sgtdv_msgs/Point2DArr.h>
 #include "../include/messages.h"
+#include "../../SGT_Utils.h"
 
 class RRTStar
 {
@@ -36,21 +39,19 @@ public:
   };
   typedef std::shared_ptr<Node> NodeSPtr;
 
-  // static constexpr float NODE_STEP_SIZE		   = 0.3;					// [m]; distance between parent and child node
-  // static constexpr float END_DIST_THRESHOLD	   = 0.25;
-  // static constexpr float RRTSTAR_NEIGHBOR_RADIUS = 5 * NODE_STEP_SIZE;	// [m]; radius for searching neighbor nodes
-  // static constexpr float CAR_WIDTH		       = 2.5;					// [m]; minimum distance from track boundary
-  static constexpr int   MAX_ITER 			   = 500;					// maximum number of valid algorithm iterations
-  // static constexpr double MAX_ANGLE			   = 0.1 * M_PI;			// [rad]; maximum angle between parent and child node
+  struct RRTconf
+  {
+    float car_width;
+    float node_step_size;
+    float neighbor_radius;
+    float max_angle;
+    float max_iter;
+  };
 
 public:
-  RRTStar();
-  ~RRTStar();
+  RRTStar(ros::NodeHandle& nh);
+  ~RRTStar() = default;
 
-  void setConf(const RRTconf &conf)
-  {
-    conf_ = conf;
-  };
   bool update();
   void init(const std::vector<Eigen::Vector2f> &outside_cones, const std::vector<Eigen::Vector2f> &inside_cones, 
             const int start_index, const int end_index, const Eigen::Vector2f start_position,

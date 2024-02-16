@@ -15,17 +15,3 @@ struct PathPlanningMsg
   sgtdv_msgs::CarPose::ConstPtr car_pose;
   sgtdv_msgs::ConeArr::ConstPtr cone_map;
 };
-
-struct Params
-{
-  float ref_speed_slow;
-  float ref_speed_fast;
-};
-
-struct RRTconf
-{
-  float car_width;
-  float node_step_size;
-  float neighbor_radius;
-  float max_angle;
-};

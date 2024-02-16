@@ -5,11 +5,15 @@
 
 #include "../include/rrt_star.h"
 
-RRTStar::RRTStar() :
+RRTStar::RRTStar(ros::NodeHandle& handle) :
   last_node_(nullptr)
-{};
-
-RRTStar::~RRTStar() = default;
+{
+  Utils::loadParam(handle, "/rrt_conf/car_width", &conf_.car_width);
+  Utils::loadParam(handle, "/rrt_conf/node_step_size", &conf_.node_step_size);
+  conf_.neighbor_radius = 5 * conf_.node_step_size;
+  Utils::loadParam(handle, "/rrt_conf/max_angle", &conf_.max_angle);
+  Utils::loadParam(handle, "/rrt_conf/max_iter", &conf_.max_iter);
+};
 
 /**
  * @brief Initialization of whole object.
@@ -36,7 +40,7 @@ void RRTStar::init(const std::vector<Eigen::Vector2f> &outside_cones, const std:
 bool RRTStar::update()
 {
   path_reverse_.clear();
-  for(int i = 0; i < MAX_ITER; i++)
+  for(int i = 0; i < conf_.max_iter; i++)
   {
     // generate random position
     Eigen::Vector2f new_pos;

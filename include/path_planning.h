@@ -38,27 +38,20 @@ constexpr float BEZIER_RESOLUTION = 0.125;
 class PathPlanning
 {
 public:
-  PathPlanning(const ros::NodeHandle& handle);
+  struct Params
+  {
+    float ref_speed_slow;
+    float ref_speed_fast;
+  };
+  
+public:
+  PathPlanning(ros::NodeHandle& handle);
   ~PathPlanning() = default;
 
-  void setPublisher(const ros::Publisher &trajectory_pub
-                #ifdef SGT_VISUALIZATION
-                  , const ros::Publisher &path_planning_vis_pub
-                  , const ros::Publisher &interpolated_cones_pub
-                #endif /* SGT_VISUALIZATION */
-                  );
-  void SetServiceClient(const ros::ServiceClient &set_speed_client)
-  {
-    set_speed_client_ = set_speed_client;
-  };
   void update(const PathPlanningMsg &msg);  
   void yellowOnLeft(bool value);
   void fullMap() { full_map_ = true; };
   //void setDiscipline(Discipline discipline);
-
-#ifdef SGT_DEBUG_STATE
-  void setVisDebugPublisher(const ros::Publisher& publisher) { vis_debug_publisher_ = publisher; };
-#endif
 
 private:
   bool rrtRun();
@@ -71,27 +64,30 @@ private:
   void visualizeRRTPoints();
 #endif /* SGT_VISUALIZATION */
     
+  ros::Publisher trajectory_pub_;
+  ros::ServiceClient set_speed_client_;
+
+#ifdef SGT_VISUALIZATION
+  ros::Publisher interpolated_cones_pub_;
+  ros::Publisher rrt_vis_pub_;
+#endif /* SGT_VISUALIZATION */
+
+#ifdef SGT_DEBUG_STATE
+  ros::Publisher vis_debug_publisher_;
+#endif
+  
   RRTStar rrt_star_obj_;
   Params params_;
 	
   float timer_avg_;
   int timer_avg_count_;
 
-  ros::Publisher trajectory_pub_;
-  ros::ServiceClient set_speed_client_;
   sgtdv_msgs::Float32Srv set_speed_msg_;
   bool is_yellow_on_left_;
   bool once_;
   bool full_map_;
 
-  std::vector<Eigen::Vector2f> left_cones_, left_cones_interpolated_,  right_cones_, 
+  std::vector<Eigen::Vector2f> left_cones_, left_cones_interpolated_, right_cones_, 
                               right_cones_interpolated_, middle_line_points_;
   //PathPlanningDiscipline *path_planning_discipline_obj = nullptr;
-
-#ifdef SGT_VISUALIZATION
-  ros::Publisher interpolated_cones_pub_, path_planning_vis_pub_;
-#endif /* SGT_VISUALIZATION */
-#ifdef SGT_DEBUG_STATE
-  ros::Publisher vis_debug_publisher_;
-#endif
 };

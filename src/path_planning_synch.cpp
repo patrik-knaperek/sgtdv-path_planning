@@ -5,32 +5,17 @@
 
 #include "../include/path_planning_synch.h"
 
-PathPlanningSynch::PathPlanningSynch(const ros::NodeHandle& handle):
-  path_planning_obj_(handle),
+PathPlanningSynch::PathPlanningSynch(ros::NodeHandle& nh) :
+  /* ROS interface init */
+  map_sub_(nh.subscribe("slam/map", 1, &PathPlanningSynch::updateMap, this)),
+  pose_sub_(nh.subscribe("slam/pose", 1, &PathPlanningSynch::updatePose, this)),
+  loop_close_sub_(nh.subscribe("slam/loop_closure", 1, &PathPlanningSynch::loopClosureCallback, this)),
+  
+  path_planning_obj_(nh),
+  
   map_received_(false),
   pose_received_(false)
 {
-
-}
-
-/**
- * @brief Seting ROS publishers.
- * @param trajectory_pub
- * @param interpolated_cones_pub
- */
-void PathPlanningSynch::setPublisher(const ros::Publisher &trajectoryPub
-                              #ifdef SGT_VISUALIZATION
-                                  , const ros::Publisher &trajectoryVisPub
-                                  , const ros::Publisher &interpolatedConesPub
-                              #endif /* SGT_VISUALIZATION */
-                                  )
-{
-  path_planning_obj_.setPublisher(trajectoryPub
-                          #ifdef SGT_VISUALIZATION
-                              , trajectoryVisPub
-                              , interpolatedConesPub
-                          #endif /* SGT_VISUALIZATION */
-                              );
 }
 
 /**

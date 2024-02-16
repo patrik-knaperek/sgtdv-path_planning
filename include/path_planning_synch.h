@@ -23,19 +23,8 @@
 class PathPlanningSynch
 {
 public:
-  PathPlanningSynch(const ros::NodeHandle& handle);
+  PathPlanningSynch(ros::NodeHandle& handle);
   ~PathPlanningSynch() = default;
-
-  void setPublisher(const ros::Publisher &trajectory_pub
-                #ifdef SGT_VISUALIZATION
-                  , const ros::Publisher &trajectory_vis_pub
-                  , const ros::Publisher &interpolated_cones_pub
-                #endif /* SGT_VISUALIZATION */
-                  );
-  void setServiceClient(const ros::ServiceClient &set_speed_client)
-  {
-    path_planning_obj_.SetServiceClient(set_speed_client);
-  };
 
   void update();
   void updateMap(const sgtdv_msgs::ConeArr::ConstPtr &msg);
@@ -44,13 +33,14 @@ public:
   void yellowOnLeft(bool value);
   //void setDiscipline(Discipline discipline);
 
-#ifdef SGT_DEBUG_STATE
-  void setVisDebugPublisher(ros::Publisher publisher) { path_planning_obj_.setVisDebugPublisher(publisher); };
-#endif
-
 private:
+  ros::Subscriber map_sub_;
+  ros::Subscriber pose_sub_;
+  ros::Subscriber loop_close_sub_;
+
   PathPlanning path_planning_obj_;   
   PathPlanningMsg path_planning_msg_;
+
   bool map_received_;
   bool pose_received_;
 };
