@@ -60,15 +60,19 @@ private:
   sgtdv_msgs::Point2DArr findMiddlePoints();
 
 #ifdef SGT_VISUALIZATION
+  void initPathBoundariesMarkers();
+  void initRRTPointsMarker();
   void visualizeInterpolatedCones();
   void visualizeRRTPoints();
+  void deleteMarkers(visualization_msgs::MarkerArray& marker_array,
+                    const ros::Publisher& publisher) const;
 #endif /* SGT_VISUALIZATION */
     
   ros::Publisher trajectory_pub_;
   ros::ServiceClient set_speed_client_;
 
 #ifdef SGT_VISUALIZATION
-  ros::Publisher interpolated_cones_pub_;
+  ros::Publisher boundaries_vis_pub_;
   ros::Publisher rrt_vis_pub_;
 #endif /* SGT_VISUALIZATION */
 
@@ -90,4 +94,11 @@ private:
   std::vector<Eigen::Vector2f> left_cones_, left_cones_interpolated_, right_cones_, 
                               right_cones_interpolated_, middle_line_points_;
   //PathPlanningDiscipline *path_planning_discipline_obj = nullptr;
+
+#ifdef SGT_VISUALIZATION
+  visualization_msgs::Marker left_cones_interpolated_marker_, right_cones_interpolated_marker_,
+                              left_cones_marker_, right_cones_marker_,
+                              start_marker_, finish_marker_,
+                              rrt_nodes_marker_, rrt_trajectory_marker_;
+#endif /* SGT_VISUALIZATION */
 };
