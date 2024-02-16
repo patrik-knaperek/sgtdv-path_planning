@@ -5,16 +5,20 @@
 
 #pragma once
 
+/* C++ */
+#include <vector>
+#include <map>
+#include <Eigen/Eigen>
+
+/* ROS */
 #include <ros/ros.h>
+
+/* SGT-DV */
 #include <sgtdv_msgs/PathPlanningMsg.h>
 #include <sgtdv_msgs/PathTrackingMsg.h>
 #include <sgtdv_msgs/Cone.h>
 #include <sgtdv_msgs/Point2D.h>
-#include <vector>
-#include <map>
-// #include "opencv2/core/core.hpp"
-#include <Eigen/Eigen>
-#include "../include/messages.h"
+#include "messages.h"
 
 #define deg2rad(x) (x*M_PI/180.f)
 
@@ -30,8 +34,7 @@ class PathPlanningDiscipline
 {
 public:
   virtual sgtdv_msgs::Point2DArrPtr update(const PathPlanningMsg &msg) = 0;  
-  void yellowOnLeft(bool value);
-
+  
 protected:
   PathPlanningDiscipline();
   ~PathPlanningDiscipline();

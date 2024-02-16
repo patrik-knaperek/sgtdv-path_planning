@@ -1,9 +1,9 @@
 /*****************************************************/
 /* Organization: Stuba Green Team
-/* Authors: Juraj Krasňanský
+/* Authors: Juraj Krasňanský, Patrik Knaperek
 /*****************************************************/
 
-#include "../include/path_planning_synch.h"
+#include "path_planning_synch.h"
 //#include "../include/path_planning_disciplines.h"
 
 int main(int argc, char** argv)

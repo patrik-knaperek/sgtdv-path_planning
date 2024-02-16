@@ -3,15 +3,19 @@
 /* Authors: Juraj Krasňanský, Samuel Mazur, Patrik Knaperek
 /*****************************************************/
 
+/* SGT-DV */
+#include "SGT_Utils.h"
+#include <sgtdv_msgs/DebugState.h>
+#include <sgtdv_msgs/Cone.h>
 
-#include "../include/path_planning.h"
+/* Header */
+#include "path_planning.h"
 
 PathPlanning::PathPlanning(ros::NodeHandle& handle) :
   /* ROS interface init */
   trajectory_pub_(handle.advertise<sgtdv_msgs::Point2DArr>("pathplanning_trajectory", 1)),
-  set_speed_client_(handle.serviceClient<sgtdv_msgs::Float32Srv>("pathTracking/set_speed")),
 #ifdef SGT_VISUALIZATION
-  boundaries_vis_pub_(handle.advertise<visualization_msgs::MarkerArray>("pathplanning/visualize/path_boundaries", 1)),
+  boundaries_vis_pub_(handle.advertise<visualization_msgs::MarkerArray>("pathplanning/visualize/track_boundaries", 1)),
   rrt_vis_pub_(handle.advertise<visualization_msgs::MarkerArray>("pathplanning/visualize/rrt", 1)),
 #endif /* SGT_VISUALIZATION */
 #ifdef SGT_DEBUG_STATE
@@ -64,14 +68,14 @@ void PathPlanning::update(const PathPlanningMsg &msg)
     ROS_WARN("Invalid map obtained. Cannot distinguish track borders.");
     return;
   }
-  left_cones_interpolated_ = linearInterpolation(left_cones_);
-  right_cones_interpolated_ = linearInterpolation(right_cones_);
+  left_cones_interpolated_ = linearInterpolation(left_cones_, msg.car_pose);
+  right_cones_interpolated_ = linearInterpolation(right_cones_, msg.car_pose);
 
 #ifdef SGT_VISUALIZATION
   visualizeInterpolatedCones();
 #endif /* SGT_VISUALIZATION */
 
-  bool rrt_completed(false);
+  static bool rrt_completed(false);
   if(full_map_)
   {
     rrt_completed = rrtRun();
@@ -90,9 +94,9 @@ void PathPlanning::update(const PathPlanningMsg &msg)
   }
 
   // when used with path_tracking
-  if(!ros::service::call("pathTracking/set_speed", set_speed_msg_))
+  if(!ros::service::call("path_tracking/set_speed", set_speed_msg_))
   {
-    ROS_ERROR("Service \"pathTracking/set_speed\" failed");
+    ROS_WARN_ONCE("Service \"pathTracking/set_speed\" failed");
   }
   trajectory_pub_.publish(trajectory);
 
@@ -118,22 +122,16 @@ bool PathPlanning::rrtRun()
     timer_avg_ = 0;
     timer_avg_count_ = 0;
     
-    Eigen::Vector2f start_pos = ((left_cones_interpolated_[0] + right_cones_interpolated_[0]) * 0.5f);
-    short cone_iter = left_cones_interpolated_.size();
-    Eigen::Vector2f end_pos = 
-      ((left_cones_interpolated_[left_cones_interpolated_.size()-1] 
-      + right_cones_interpolated_[right_cones_interpolated_.size()-1]) * 0.5f);
-    
-    rrt_star_obj_.init(left_cones_interpolated_, right_cones_interpolated_,0, cone_iter, start_pos, end_pos);
+    rrt_star_obj_.init(left_cones_interpolated_, right_cones_interpolated_);
   }
 
   //execution timer
-  auto start_marker_ = std::chrono::high_resolution_clock::now();
+  const auto start_marker_ = std::chrono::high_resolution_clock::now();
 
-  bool end_reached = rrt_star_obj_.update();
+  const bool end_reached = rrt_star_obj_.update();
 
-  auto stop = std::chrono::high_resolution_clock::now();
-  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start_marker_);
+  const auto stop = std::chrono::high_resolution_clock::now();
+  const auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start_marker_);
   timer_avg_ += duration.count()/ 1000000.f;
   timer_avg_count_ +=1;
   ROS_DEBUG("\nRRT Timer: %f s", timer_avg_/timer_avg_count_);
@@ -158,13 +156,12 @@ void PathPlanning::sortCones(const PathPlanningMsg &msg)
 
   for(const auto &cone : msg.cone_map->cones)
   {
-    Eigen::Vector2f conePos(cone.coords.x, cone.coords.y);
+    const Eigen::Vector2f cone_pos(cone.coords.x, cone.coords.y);
 
     switch(cone.color)
     {
       case 'y':
-      case 1 :
-        right_cones_.push_back(conePos);
+        right_cones_.push_back(cone_pos);
         {
           if(right_cones_.size() > 2)
           {
@@ -175,8 +172,7 @@ void PathPlanning::sortCones(const PathPlanningMsg &msg)
         }
         break;
       case 'b':
-      case 2 :
-        left_cones_.push_back(conePos);
+        left_cones_.push_back(cone_pos);
         {
           if(left_cones_.size() > 2)
           {
@@ -188,10 +184,9 @@ void PathPlanning::sortCones(const PathPlanningMsg &msg)
         break;
       case 's':
       case 'g':
-      case 3 :
         break;
       default:
-        ROS_ERROR("Unknown color of cone\n");
+        ROS_WARN("Unknown color of cone");
     }
   }
 }
@@ -201,14 +196,16 @@ void PathPlanning::sortCones(const PathPlanningMsg &msg)
  * @param sorted_cones
  * @return
  */
-std::vector<Eigen::Vector2f> PathPlanning::linearInterpolation(std::vector<Eigen::Vector2f> points) const
+std::vector<Eigen::Vector2f> 
+PathPlanning::linearInterpolation(const std::vector<Eigen::Vector2f>& points, 
+                                  const sgtdv_msgs::CarPose::ConstPtr& car_pose) const
 {
   std::vector<Eigen::Vector2f> temp_pts;
   Eigen::Vector2f temp;
 
   for(size_t i = 0; i < points.size(); i++)
   {	
-    const float max_dist = sqrt((pow(points[i+1](0) - points[i](0), 2) + pow(points[i+1](1) - points[i](1), 2)) * 1.0);
+    // const float max_dist = sqrt((pow(points[i+1](0) - points[i](0), 2) + pow(points[i+1](1) - points[i](1), 2)) * 1.0);
     float step = BEZIER_RESOLUTION;
 
     Eigen::Vector2f endpoint;
@@ -223,13 +220,17 @@ std::vector<Eigen::Vector2f> PathPlanning::linearInterpolation(std::vector<Eigen
       {
         endpoint = points[0];
       }
-      else
+      else if(points.size() > 1)
       {
         endpoint << 2 * points[i][0] - points[i-1][0], 2 * points[i][1] - points[i-1][1];
       }
+      else // points.size() == 1
+      {
+        endpoint << points[i][0] + 4 * cos(car_pose->yaw), points[i][1] + 4 * sin(car_pose->yaw);
+      }
     }
 
-    if(max_dist > 6) step /=2;
+    // if(max_dist > 6) step /=2;
 
     for(float j = 0 ; j < 1 ; j += step)
     {	
@@ -255,11 +256,11 @@ sgtdv_msgs::Point2DArr PathPlanning::findMiddlePoints()
 
   for(size_t i = 0; i < std::min(right_cones_interpolated_.size(), left_cones_interpolated_.size()); i++)
   {
-    Eigen::Vector2f new_point = ((left_cones_interpolated_[i] + right_cones_interpolated_[i]) / 2.f);
-    middle_line_points_.push_back(new_point);		
+    const Eigen::Vector2f new_point((left_cones_interpolated_[i] + right_cones_interpolated_[i]) / 2.f);
+    middle_line_points_.emplace_back(new_point);		
   }
 
-  for(size_t i = 0; i < middle_line_points_.size()-2; i+=4)
+  for(size_t i = 0; i < middle_line_points_.size()-4; i += 4)
   {	
 
     Eigen::Vector2f endpoint2 = middle_line_points_[i+2];
@@ -267,38 +268,38 @@ sgtdv_msgs::Point2DArr PathPlanning::findMiddlePoints()
     Eigen::Vector2f endpoint4 = middle_line_points_[i+4];
 
     if((i+2) == middle_line_points_.size()) endpoint2 = middle_line_points_[0];
-    if((i+3)>middle_line_points_.size()) endpoint3 = middle_line_points_[1];	
-    if((i+4)>middle_line_points_.size()) endpoint4 = middle_line_points_[2];
+    if((i+3) > middle_line_points_.size()) endpoint3 = middle_line_points_[1];	
+    if((i+4) > middle_line_points_.size()) endpoint4 = middle_line_points_[2];
 
 
-    for( float j = 0 ; j < 1 ; j += 0.01)
+    for(float j = 0 ; j < 1 ; j += BEZIER_RESOLUTION)
     {
-      float xa = middle_line_points_[i](0) + ((middle_line_points_[i+1](0)-middle_line_points_[i](0))*j);
-      float ya = middle_line_points_[i](1) + ((middle_line_points_[i+1](1)-middle_line_points_[i](1))*j);
-      float xb= middle_line_points_[i+1](0) + ((endpoint2(0)-middle_line_points_[i+1](0))*j);
-      float yb = middle_line_points_[i+1](1) + ((endpoint2(1)-middle_line_points_[i+1](1))*j);
-      float xc = endpoint2(0) + ((endpoint3(0)-endpoint2(0))*j);
-      float yc = endpoint2(1) + ((endpoint3(1)-endpoint2(1))*j);
-      float xd = endpoint3(0) + ((endpoint4(0)-endpoint3(0))*j);
-      float yd = endpoint3(1) + ((endpoint4(1)-endpoint3(1))*j);
+      const float xa = middle_line_points_[i](0) + ((middle_line_points_[i+1](0) - middle_line_points_[i](0)) * j);
+      const float ya = middle_line_points_[i](1) + ((middle_line_points_[i+1](1) - middle_line_points_[i](1)) * j);
+      const float xb = middle_line_points_[i+1](0) + ((endpoint2(0)-middle_line_points_[i+1](0)) * j);
+      const float yb = middle_line_points_[i+1](1) + ((endpoint2(1)-middle_line_points_[i+1](1)) * j);
+      const float xc = endpoint2(0) + ((endpoint3(0)-endpoint2(0)) * j);
+      const float yc = endpoint2(1) + ((endpoint3(1)-endpoint2(1)) * j);
+      const float xd = endpoint3(0) + ((endpoint4(0)-endpoint3(0)) * j);
+      const float yd = endpoint3(1) + ((endpoint4(1)-endpoint3(1)) * j);
 
-      float xe = xa + ((xb-xa)*j);
-      float ye = ya + ((yb-ya)*j);
-      float xf= xb + ((xc-xb)*j);
-      float yf = yb + ((yc-yb)*j);
-      float xg= xc + ((xd-xc)*j);
-      float yg = yc + ((yd-yc)*j);
+      const float xe = xa + ((xb - xa) * j);
+      const float ye = ya + ((yb - ya) * j);
+      const float xf = xb + ((xc - xb) * j);
+      const float yf = yb + ((yc - yb) * j);
+      const float xg = xc + ((xd - xc) * j);
+      const float yg = yc + ((yd - yc) * j);
 
-      float xh = xe + ((xf-xe)*j);
-      float yh = ye + ((yf-ye)*j);
-      float xi= xf + ((xg-xf)*j);
-      float yi = yf + ((yg-yf)*j);
+      const float xh = xe + ((xf - xe) * j);
+      const float yh = ye + ((yf - ye) * j);
+      const float xi = xf + ((xg - xf) * j);
+      const float yi = yf + ((yg - yf) * j);
       
-      point.x = xh + ((xi-xh)*j);
-      point.y = yh + ((yi-yh)*j);
+      point.x = xh + ((xi - xh) * j);
+      point.y = yh + ((yi - yh) * j);
       trajectory.points.push_back(point);
     }
-    if(!i) i-=2;
+    if(!i) i -= 2;
   }
 
   return trajectory;	

@@ -5,16 +5,6 @@
 
 #pragma once
 
-/* C++ */
-#include <math.h>
-#include <iostream>
-#include <unistd.h>
-#include <vector>
-#include <map>
-#include <chrono>
-
-// #include "opencv2/core/core.hpp"
-
 /* ROS */
 #include <ros/ros.h>
 #include <visualization_msgs/Marker.h>
@@ -23,29 +13,17 @@
 /* SGT */
 #include "messages.h"
 //#include "path_planning_disciplines.h"
-#include "../include/rrt_star.h"
-#include <sgtdv_msgs/PathPlanningMsg.h>
-#include <sgtdv_msgs/Cone.h>
-#include <sgtdv_msgs/Point2D.h>
 #include <sgtdv_msgs/Point2DArr.h>
 #include <sgtdv_msgs/Float32Srv.h>
-#include <sgtdv_msgs/DebugState.h>
-#include "../../SGT_Utils.h"
-#include "../../SGT_Macros.h"
+#include "SGT_Macros.h"
+#include "rrt_star.h"
 
 constexpr float BEZIER_RESOLUTION = 0.125;
 
 class PathPlanning
-{
+{ 
 public:
-  struct Params
-  {
-    float ref_speed_slow;
-    float ref_speed_fast;
-  };
-  
-public:
-  PathPlanning(ros::NodeHandle& handle);
+  explicit PathPlanning(ros::NodeHandle& handle);
   ~PathPlanning() = default;
 
   void update(const PathPlanningMsg &msg);  
@@ -55,7 +33,8 @@ public:
 private:
   bool rrtRun();
   void sortCones(const PathPlanningMsg &msg);
-  std::vector<Eigen::Vector2f> linearInterpolation(std::vector<Eigen::Vector2f> points) const;
+  std::vector<Eigen::Vector2f> 
+  linearInterpolation(const std::vector<Eigen::Vector2f>& points, const sgtdv_msgs::CarPose::ConstPtr& car_pose) const;
   sgtdv_msgs::Point2DArr findMiddlePoints();
 
 #ifdef SGT_VISUALIZATION
@@ -66,9 +45,14 @@ private:
   void deleteMarkers(visualization_msgs::MarkerArray& marker_array,
                     const ros::Publisher& publisher) const;
 #endif /* SGT_VISUALIZATION */
+
+  struct Params
+  {
+    float ref_speed_slow;
+    float ref_speed_fast;
+  };
     
   ros::Publisher trajectory_pub_;
-  ros::ServiceClient set_speed_client_;
 
 #ifdef SGT_VISUALIZATION
   ros::Publisher boundaries_vis_pub_;

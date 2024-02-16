@@ -13,26 +13,26 @@
 #include <std_msgs/Empty.h>
 
 /* SGT */
-#include "../include/path_planning.h"
+#include "path_planning.h"
 //#include "../include/path_planning_disciplines.h"
 #include <sgtdv_msgs/ConeArr.h>
 #include <sgtdv_msgs/CarPose.h>
-#include "../include/messages.h"
+#include "messages.h"
 
 
 class PathPlanningSynch
 {
 public:
-  PathPlanningSynch(ros::NodeHandle& handle);
+  explicit PathPlanningSynch(ros::NodeHandle& handle);
   ~PathPlanningSynch() = default;
 
+private:
   void update();
   void updateMap(const sgtdv_msgs::ConeArr::ConstPtr &msg);
   void updatePose(const sgtdv_msgs::CarPose::ConstPtr &msg);
   void loopClosureCallback(const std_msgs::Empty::ConstPtr &msg);
   //void setDiscipline(Discipline discipline);
 
-private:
   ros::Subscriber map_sub_;
   ros::Subscriber pose_sub_;
   ros::Subscriber loop_close_sub_;

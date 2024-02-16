@@ -3,7 +3,7 @@
 /* Authors: Juraj Krasňanský, Samuel Mazur, Patrik Knaperek
 /*****************************************************/
 
-#include "../include/path_planning_synch.h"
+#include "path_planning_synch.h"
 
 PathPlanningSynch::PathPlanningSynch(ros::NodeHandle& nh) :
   /* ROS interface init */
