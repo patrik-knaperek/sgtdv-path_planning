@@ -30,7 +30,6 @@ public:
   void updateMap(const sgtdv_msgs::ConeArr::ConstPtr &msg);
   void updatePose(const sgtdv_msgs::CarPose::ConstPtr &msg);
   void loopClosureCallback(const std_msgs::Empty::ConstPtr &msg);
-  void yellowOnLeft(bool value);
   //void setDiscipline(Discipline discipline);
 
 private:

@@ -49,7 +49,6 @@ public:
   ~PathPlanning() = default;
 
   void update(const PathPlanningMsg &msg);  
-  void yellowOnLeft(bool value);
   void fullMap() { full_map_ = true; };
   //void setDiscipline(Discipline discipline);
 
@@ -87,7 +86,6 @@ private:
   int timer_avg_count_;
 
   sgtdv_msgs::Float32Srv set_speed_msg_;
-  bool is_yellow_on_left_;
   bool once_;
   bool full_map_;
 

@@ -22,9 +22,6 @@ int main(int argc, char** argv)
   //    synch_obj.setDiscipline(SKIDPAD);
   //}
 
-  //TODO: Set yellow cones side (left or right)
-  //synch_obj.yellowOnLeft(true/false);
-
   ros::spin();
 
   return 0;

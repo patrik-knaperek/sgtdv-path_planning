@@ -19,7 +19,6 @@ PathPlanning::PathPlanning(ros::NodeHandle& handle) :
 #endif
 
   rrt_star_obj_(handle),
-  is_yellow_on_left_(true),
   once_(true),
   full_map_(false)
 {
@@ -43,16 +42,6 @@ PathPlanning::PathPlanning(ros::NodeHandle& handle) :
 
   if(!path_planning_discipline_obj) ros::shutdown();
 }*/
-
-/**
- * @brief Swap color of cones in arrays.
- * @param is_yellow_on_left
- */
-void PathPlanning::yellowOnLeft(bool value)
-{
-  //m_pathPlanningDiscipline->YellowOnLeft(value);
-  is_yellow_on_left_ = value;
-}
 
 /**
  * @brief Main function in class.
@@ -204,11 +193,6 @@ void PathPlanning::sortCones(const PathPlanningMsg &msg)
       default:
         ROS_ERROR("Unknown color of cone\n");
     }
-  }
-
-  if(is_yellow_on_left_)
-  {
-    std::swap(left_cones_, right_cones_);
   }
 }
 
@@ -450,9 +434,7 @@ void PathPlanning::visualizeInterpolatedCones()
     temp.x = cone(0);
     temp.y = cone(1);
     
-    is_yellow_on_left_ ? 
-      right_cones_interpolated_marker_.points.push_back(temp) :
-      left_cones_interpolated_marker_.points.push_back(temp);
+    left_cones_interpolated_marker_.points.push_back(temp);
   }
 
   for(const auto &cone : right_cones_interpolated_)
@@ -460,9 +442,7 @@ void PathPlanning::visualizeInterpolatedCones()
     temp.x = cone(0);
     temp.y = cone(1);
 
-    is_yellow_on_left_ ?
-      left_cones_interpolated_marker_.points.push_back(temp) :
-      right_cones_interpolated_marker_.points.push_back(temp);
+    right_cones_interpolated_marker_.points.push_back(temp);
   }
 
   marker_arr.markers.push_back(right_cones_interpolated_marker_);
@@ -474,9 +454,7 @@ void PathPlanning::visualizeInterpolatedCones()
     temp.x = cone(0);
     temp.y = cone(1);
 
-    is_yellow_on_left_ ?
-      right_cones_marker_.points.push_back(temp) :
-      left_cones_marker_.points.push_back(temp);
+    left_cones_marker_.points.push_back(temp);
   }
 
   for(const auto &cone : right_cones_)
@@ -484,9 +462,7 @@ void PathPlanning::visualizeInterpolatedCones()
     temp.x = cone(0);
     temp.y = cone(1);
 
-    is_yellow_on_left_ ?
-      left_cones_marker_.points.push_back(temp) :
-      right_cones_marker_.points.push_back(temp);
+    right_cones_marker_.points.push_back(temp);
   }
 
   marker_arr.markers.push_back(right_cones_marker_);

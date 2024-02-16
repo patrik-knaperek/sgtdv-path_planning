@@ -68,15 +68,6 @@ void PathPlanningSynch::updatePose(const sgtdv_msgs::CarPose::ConstPtr &msg)
   update();
 }
 
-/**
- * @brief Swap color of cones in arrays.
- * @param is_yellow_on_left
- */
-void PathPlanningSynch::yellowOnLeft(bool value)
-{
-  path_planning_obj_.yellowOnLeft(value);
-}
-
 /*void PathPlanningSynch::SetDiscipline(Discipline discipline)
 {
   m_pathPlanning.SetDiscipline(discipline);

@@ -16,11 +16,6 @@ PathPlanningDiscipline::~PathPlanningDiscipline()
 
 }
 
-void PathPlanningDiscipline::yellowOnLeft(bool value)
-{
-    is_yellow_on_left_ = value;
-}
-
 
 //////////////////////////////
 //////////////////////////////
@@ -97,12 +92,6 @@ void UnknownTrack::sortCones(const PathPlanningMsg &msg)
           std::cerr << "Unknown color of cone\n";
       }
     }
-  }
-
-  if(is_yellow_on_left_)
-  {
-    std::swap(left_cones_, right_cones_);
-    std::swap(left_distances_, right_distances_);
   }
 }
 
