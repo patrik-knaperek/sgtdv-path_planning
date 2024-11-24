@@ -10,13 +10,13 @@
 
 PathPlanningROS::PathPlanningROS(ros::NodeHandle& nh) :
   /* ROS interface init */
-  trajectory_pub_(nh.advertise<sgtdv_msgs::Point2DArr>("pathplanning_trajectory", 1)),
+  trajectory_pub_(nh.advertise<sgtdv_msgs::Point2DArr>("path_planning/trajectory", 1)),
 #ifdef SGT_VISUALIZATION
-  boundaries_vis_pub_(nh.advertise<visualization_msgs::MarkerArray>("pathplanning/visualize/track_boundaries", 1)),
-  rrt_vis_pub_(nh.advertise<visualization_msgs::MarkerArray>("pathplanning/visualize/rrt", 1)),
+  boundaries_vis_pub_(nh.advertise<visualization_msgs::MarkerArray>("path_planning/visualize/track_boundaries", 1)),
+  rrt_vis_pub_(nh.advertise<visualization_msgs::MarkerArray>("path_planning/visualize/rrt", 1)),
 #endif /* SGT_VISUALIZATION */
 #ifdef SGT_DEBUG_STATE
-  vis_debug_publisher_(nh.advertise<sgtdv_msgs::DebugState>("pathplanning_debug_state", 10)),
+  vis_debug_publisher_(nh.advertise<sgtdv_msgs::DebugState>("path_planning/debug_state", 10)),
 #endif
 
   map_sub_(nh.subscribe("slam/map", 1, &PathPlanningROS::mapCallback, this)),

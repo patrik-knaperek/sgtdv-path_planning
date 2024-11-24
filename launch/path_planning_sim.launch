@@ -11,6 +11,6 @@
   <node pkg="rosservice" 
     type="rosservice" 
     name="set_path_planning_log_level" 
-    args="call /path_planning/set_logger_level 'ros.path_planning' 'debug'" />
+    args="call /path_planning/set_logger_level 'ros.path_planning' 'info'" />
   
 </launch> 

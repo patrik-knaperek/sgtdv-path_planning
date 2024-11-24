@@ -37,8 +37,8 @@ $ catkin build path_planning -DCMAKE_BUILD_TYPE=Release
 ### Compilation configuration
 * [`SGT_Macros.h`](../SGT_Macros.h)
 	* `SGT_VISUALIZE` : publish intermediate calculations on visualizable topics
-		- `/pathplanning/visualize/track_boundaries [visualization_msgs/MarkerArray]` - Track boundaries and interpolated cones
-		- `/pathplanning/visualize/rrt [visualization_msgs/MarkerArray]` - RRT nodes and trajectory
+		- `/path_planning/visualize/track_boundaries [visualization_msgs/MarkerArray]` - Track boundaries and interpolated cones
+		- `/path_planning/visualize/rrt [visualization_msgs/MarkerArray]` - RRT nodes and trajectory
 	* `SGT_DEBUG_STATE` : publish debug state topic for `debug_visualization` processing
 * [`path_planning.yaml`](./params/path_planning_rc.yaml)
   * `ref_speed` : reference speed sended to the `path_tracking` node
