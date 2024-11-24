@@ -8,13 +8,11 @@
 /* C++ */
 #include <Eigen/Eigen>
 
-/* ROS */
-#include <ros/ros.h>
-
 /* SGT DV */
 #include <sgtdv_msgs/Point2DArr.h>
-#include "messages.h"
 #include "SGT_Utils.h"
+
+typedef std::vector<Eigen::Vector2f> Points;
 
 class RRTStar
 {
@@ -25,7 +23,7 @@ public:
     
     Node();
 
-    Node(const Eigen::Ref<const Eigen::Vector2f>& pos) :
+    Node(const Eigen::Vector2f& pos) :
       parent(nullptr),
       position(pos),
       orientation(0.f),
@@ -51,34 +49,39 @@ public:
   };
 
 public:
-  RRTStar(ros::NodeHandle& nh);
+  RRTStar() = default;
   ~RRTStar() = default;
 
+  void setConf(const RRTconf& conf)
+  {
+    conf_ = conf;
+  };
+
   bool update();
-  void init(const std::vector<Eigen::Vector2f> &outside_cones, const std::vector<Eigen::Vector2f> &inside_cones);
+  void init(const Points &outside_cones, const Points &inside_cones);
   const std::vector<Node::Ptr> getNodes() const { return nodes_; };
   const sgtdv_msgs::Point2DArr getPath() const;
 
 private:
-  void initializeRootNode(const Eigen::Ref<const Eigen::Vector2f>& start_pos);
-  void setWorldSize(const std::vector<Eigen::Vector2f> &cones);
+  void initializeRootNode(const Eigen::Vector2f& start_pos);
+  void setWorldSize(const Points &cones);
   bool getRandNodePos(Eigen::Vector2f *point) const;
-  Node::Ptr findNearestNode(const Eigen::Ref<const Eigen::Vector2f>& point) const;
+  Node::Ptr findNearestNode(const Eigen::Vector2f& point) const;
   void findNearNodes(const Eigen::Vector2f point, std::vector<Node::Ptr> *out_nodes) const;
   double pathCost(const Node &q_from, const Node &q_to) const;
   void normalizePosition(const Node &q_nearest, Eigen::Vector2f *q_pos) const;
   void add(const double cost, const Node::Ptr &q_nearest, const Node::Ptr &q_new);
-  bool isOnTrack(const Eigen::Ref<const Eigen::Vector2f>& target_point) const;
-  float computeDistance(const Eigen::Ref<const Eigen::Vector2f>& p, const Eigen::Ref<const Eigen::Vector2f>& q) const;
-  float computeOrientation(const Eigen::Ref<const Eigen::Vector2f>& p_from,
-                            const Eigen::Ref<const Eigen::Vector2f>& p_to) const;
-  float computeAngleDiff(const Node &q_from, const Eigen::Ref<const Eigen::Vector2f>& p_to) const;
+  bool isOnTrack(const Eigen::Vector2f& target_point) const;
+  float computeDistance(const Eigen::Vector2f& p, const Eigen::Vector2f& q) const;
+  float computeOrientation(const Eigen::Vector2f& p_from,
+                            const Eigen::Vector2f& p_to) const;
+  float computeAngleDiff(const Node &q_from, const Eigen::Vector2f& p_to) const;
 
   RRTconf conf_;
 
   std::vector<Node::Ptr> nodes_, path_reverse_;
 
-  std::vector<Eigen::Vector2f> in_cones_, out_cones_;
+  Points in_cones_, out_cones_;
 
   Node::Ptr root_ = nullptr;
   Eigen::Vector2f end_pos_;

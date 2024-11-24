@@ -5,34 +5,14 @@
 
 /* SGT-DV */
 #include "SGT_Utils.h"
-#include <sgtdv_msgs/DebugState.h>
-#include <sgtdv_msgs/Cone.h>
 
 /* Header */
 #include "path_planning.h"
 
-PathPlanning::PathPlanning(ros::NodeHandle& handle) :
-  /* ROS interface init */
-  trajectory_pub_(handle.advertise<sgtdv_msgs::Point2DArr>("pathplanning_trajectory", 1)),
-#ifdef SGT_VISUALIZATION
-  boundaries_vis_pub_(handle.advertise<visualization_msgs::MarkerArray>("pathplanning/visualize/track_boundaries", 1)),
-  rrt_vis_pub_(handle.advertise<visualization_msgs::MarkerArray>("pathplanning/visualize/rrt", 1)),
-#endif /* SGT_VISUALIZATION */
-#ifdef SGT_DEBUG_STATE
-  vis_debug_publisher_(handle.advertise<sgtdv_msgs::DebugState>("pathplanning_debug_state", 10)),
-#endif
-
-  rrt_star_obj_(handle),
+PathPlanning::PathPlanning() :
   once_(true),
   full_map_(false)
 {
-  Utils::loadParam(handle, "/ref_speed/slow", &params_.ref_speed_slow);
-  Utils::loadParam(handle, "/ref_speed/fast", &params_.ref_speed_fast);
-
-#ifdef SGT_VISUALIZATION
-  initPathBoundariesMarkers();
-  initRRTPointsMarker();
-#endif /* SGT_VISUALIZATION */
 }
 
 /*void PathPlanning::SetDiscipline(Discipline discipline)
@@ -51,64 +31,42 @@ PathPlanning::PathPlanning(ros::NodeHandle& handle) :
  * @brief Main function in class.
  * @param incoming_ros_msg
  */
-void PathPlanning::update(const PathPlanningMsg &msg)
+sgtdv_msgs::Point2DArr PathPlanning::update(const sgtdv_msgs::PathPlanningMsg &msg)
 {
-#ifdef SGT_DEBUG_STATE
-  sgtdv_msgs::DebugState state;
-  state.stamp = ros::Time::now();
-  state.working_state = 1;
-  vis_debug_publisher_.publish(state);
-#endif // SGT_DEBUG_STATE
-
 //m_publisher.publish(m_pathPlanningDiscipline->Do(msg));
+  
+  sgtdv_msgs::Point2DArr trajectory;
 
   sortCones(msg);
-  if(!left_cones_.size() || !right_cones_.size())
+  
+  if(left_cones_.size() && right_cones_.size())
   {
-    ROS_WARN("Invalid map obtained. Cannot distinguish track borders.");
-    return;
-  }
-  left_cones_interpolated_ = linearInterpolation(left_cones_, msg.car_pose);
-  right_cones_interpolated_ = linearInterpolation(right_cones_, msg.car_pose);
+    left_cones_interpolated_ = linearInterpolation(left_cones_, msg.car_pose);
+    right_cones_interpolated_ = linearInterpolation(right_cones_, msg.car_pose);
 
-#ifdef SGT_VISUALIZATION
-  visualizeInterpolatedCones();
-#endif /* SGT_VISUALIZATION */
+    static bool rrt_completed(false);
+    if(full_map_)
+    {
+      rrt_completed = rrtRun();
+    }
 
-  static bool rrt_completed(false);
-  if(full_map_)
-  {
-    rrt_completed = rrtRun();
-  }
-
-  sgtdv_msgs::Point2DArr trajectory;
-  if(rrt_completed)
-  {
-    trajectory = rrt_star_obj_.getPath();
-    set_speed_msg_.request.data = params_.ref_speed_fast;
+    if(rrt_completed)
+    {
+      trajectory = rrt_star_obj_.getPath();
+      ref_speed_ = params_.ref_speed_fast;
+    }
+    else
+    {
+      trajectory = findMiddlePoints();
+      ref_speed_ = params_.ref_speed_slow;
+    }
   }
   else
   {
-    trajectory = findMiddlePoints();
-    set_speed_msg_.request.data = params_.ref_speed_slow;
+    ROS_WARN("Invalid map obtained. Cannot distinguish track borders.");
   }
-
-  // when used with path_tracking
-  if(!ros::service::call("path_tracking/set_speed", set_speed_msg_))
-  {
-    ROS_WARN_ONCE("Service \"pathTracking/set_speed\" failed");
-  }
-  trajectory_pub_.publish(trajectory);
-
-#ifdef SGT_VISUALIZATION
-  visualizeRRTPoints();
-#endif /* SGT_VISUALIZATION */
-#ifdef SGT_DEBUG_STATE
-  state.stamp = ros::Time::now();
-  state.working_state = 0;
-  state.num_of_cones = trajectory.points.size();
-  vis_debug_publisher_.publish(state);
-#endif // SGT_DEBUG_STATE
+  
+  return trajectory;
 }
 
 /**
@@ -145,7 +103,7 @@ bool PathPlanning::rrtRun()
  * @brief Sorting raw cone data.
  * @param message_cones
  */
-void PathPlanning::sortCones(const PathPlanningMsg &msg)
+void PathPlanning::sortCones(const sgtdv_msgs::PathPlanningMsg &msg)
 {
   left_cones_.clear();
   right_cones_.clear();
@@ -154,7 +112,7 @@ void PathPlanning::sortCones(const PathPlanningMsg &msg)
   right_cones_interpolated_.clear();
 
 
-  for(const auto &cone : msg.cone_map->cones)
+  for(const auto &cone : msg.cone_map.cones)
   {
     const Eigen::Vector2f cone_pos(cone.coords.x, cone.coords.y);
 
@@ -196,11 +154,9 @@ void PathPlanning::sortCones(const PathPlanningMsg &msg)
  * @param sorted_cones
  * @return
  */
-std::vector<Eigen::Vector2f> 
-PathPlanning::linearInterpolation(const std::vector<Eigen::Vector2f>& points, 
-                                  const sgtdv_msgs::CarPose::ConstPtr& car_pose) const
+Points PathPlanning::linearInterpolation(const Points& points, const sgtdv_msgs::CarPose& car_pose) const
 {
-  std::vector<Eigen::Vector2f> temp_pts;
+  Points temp_pts;
   Eigen::Vector2f temp;
 
   for(size_t i = 0; i < points.size(); i++)
@@ -226,7 +182,7 @@ PathPlanning::linearInterpolation(const std::vector<Eigen::Vector2f>& points,
       }
       else // points.size() == 1
       {
-        endpoint << points[i][0] + 4 * cos(car_pose->yaw), points[i][1] + 4 * sin(car_pose->yaw);
+        endpoint << points[i][0] + 4 * cos(car_pose.yaw), points[i][1] + 4 * sin(car_pose.yaw);
       }
     }
 
@@ -304,242 +260,3 @@ sgtdv_msgs::Point2DArr PathPlanning::findMiddlePoints()
 
   return trajectory;	
 }
-
-#ifdef SGT_VISUALIZATION
-void PathPlanning::initPathBoundariesMarkers()
-{
-  left_cones_interpolated_marker_.type = visualization_msgs::Marker::POINTS;
-  left_cones_interpolated_marker_.header.frame_id = "map";
-  left_cones_interpolated_marker_.id = 0;
-  left_cones_interpolated_marker_.ns = "left_interpolated";
-  left_cones_interpolated_marker_.scale.x = 0.2;
-  left_cones_interpolated_marker_.scale.y = 0.2;
-  left_cones_interpolated_marker_.color.b = 1.0f;
-  left_cones_interpolated_marker_.color.a = 1.0;
-
-  right_cones_interpolated_marker_.type = visualization_msgs::Marker::POINTS;
-  right_cones_interpolated_marker_.header.frame_id = "map";
-  right_cones_interpolated_marker_.id = 1;
-  right_cones_interpolated_marker_.ns = "right_interpolated";
-  right_cones_interpolated_marker_.scale.x = 0.2;
-  right_cones_interpolated_marker_.scale.y = 0.2;
-  right_cones_interpolated_marker_.color.r = 0.8f;
-  right_cones_interpolated_marker_.color.g = 0.8f;
-  right_cones_interpolated_marker_.color.a = 1.0;
-
-  left_cones_marker_.type = visualization_msgs::Marker::POINTS;
-  left_cones_marker_.header.frame_id = "map";
-  left_cones_marker_.id = 2;
-  left_cones_marker_.ns = "left_cones";
-  left_cones_marker_.scale.x = 0.4;
-  left_cones_marker_.scale.y = 0.4;
-  left_cones_marker_.color.b = 1.0f;
-  left_cones_marker_.color.a = 1.0;
-  left_cones_marker_.pose.orientation.w = 1.0;
-
-  right_cones_marker_.type = visualization_msgs::Marker::POINTS;
-  right_cones_marker_.header.frame_id = "map";
-  right_cones_marker_.id = 3;
-  right_cones_marker_.ns = "right_cones";
-  right_cones_marker_.scale.x = 0.4;
-  right_cones_marker_.scale.y = 0.4;
-  right_cones_marker_.color.r = 0.8f;
-  right_cones_marker_.color.g = 0.8f;
-  right_cones_marker_.color.a = 1.0;
-  right_cones_marker_.pose.orientation.w = 1.0;
-
-  start_marker_.type = visualization_msgs::Marker::POINTS;
-  start_marker_.header.frame_id = "map";
-  start_marker_.id = 4;
-  start_marker_.ns = "start";
-  start_marker_.scale.x = 0.5;
-  start_marker_.scale.y = 0.5;
-  start_marker_.color.r = 0.7f;
-  start_marker_.color.a = 1.0;
-  
-  finish_marker_.type = visualization_msgs::Marker::POINTS;
-  finish_marker_.header.frame_id = "map";
-  finish_marker_.id = 5;
-  finish_marker_.ns = "finish";
-  finish_marker_.scale.x = 0.5;
-  finish_marker_.scale.y = 0.5;
-  finish_marker_.color.r = 0.0f;
-  finish_marker_.color.g = 0.7f;
-  finish_marker_.color.a = 1.0;
-}
-
-void PathPlanning::initRRTPointsMarker()
-{
-  rrt_nodes_marker_.type = visualization_msgs::Marker::POINTS;
-  rrt_nodes_marker_.action = visualization_msgs::Marker::ADD;
-  rrt_nodes_marker_.header.frame_id = "map";
-  rrt_nodes_marker_.id = 0;
-  rrt_nodes_marker_.ns = "RRT nodes";
-  rrt_nodes_marker_.scale.x = 0.15;
-  rrt_nodes_marker_.scale.y = 0.15;
-  rrt_nodes_marker_.color.g = 1.0f;
-  rrt_nodes_marker_.color.a = 1.0;
-  rrt_nodes_marker_.pose.orientation.w = 1.0;
-  rrt_nodes_marker_.pose.position.z = -0.2;
-
-  rrt_trajectory_marker_.type = visualization_msgs::Marker::LINE_STRIP;
-  rrt_trajectory_marker_.action = visualization_msgs::Marker::ADD;
-  rrt_trajectory_marker_.header.frame_id = "map";
-  rrt_trajectory_marker_.id = 1;
-  rrt_trajectory_marker_.ns = "RRT trajectory";
-  rrt_trajectory_marker_.scale.x = 0.2;
-  rrt_trajectory_marker_.scale.y = 0.2;
-  rrt_trajectory_marker_.color.g = 1.0f;
-  rrt_trajectory_marker_.color.a = 1.0;
-  rrt_trajectory_marker_.pose.orientation.w = 1.0;
-  rrt_trajectory_marker_.pose.position.z = -0.2;
- 
-}
-
-/**
- * @brief Publishing message for sorted and interpolated cone data.
- * @return
- */
-void PathPlanning::visualizeInterpolatedCones()
-{	
-  static visualization_msgs::MarkerArray marker_arr;
-  
-  /* reinit markers */
-  deleteMarkers(marker_arr, boundaries_vis_pub_);
-
-  left_cones_interpolated_marker_.points.clear();
-  left_cones_interpolated_marker_.points.reserve(left_cones_interpolated_.size());
-  
-  right_cones_interpolated_marker_.points.clear();
-  right_cones_interpolated_marker_.points.reserve(right_cones_interpolated_.size());
-  
-  left_cones_marker_.points.clear();
-  left_cones_marker_.points.reserve(left_cones_.size());
-  
-  right_cones_marker_.points.clear();
-  right_cones_marker_.points.reserve(right_cones_.size());
-
-  start_marker_.points.clear();
-  start_marker_.points.reserve(2);
-
-  finish_marker_.points.clear();
-  finish_marker_.points.reserve(2);
-  
-  marker_arr.markers.reserve(6);
-
-  geometry_msgs::Point temp;
-
-  /* update interpolated markers */
-  for(const auto &cone : left_cones_interpolated_)
-  {
-    temp.x = cone(0);
-    temp.y = cone(1);
-    
-    left_cones_interpolated_marker_.points.push_back(temp);
-  }
-
-  for(const auto &cone : right_cones_interpolated_)
-  {
-    temp.x = cone(0);
-    temp.y = cone(1);
-
-    right_cones_interpolated_marker_.points.push_back(temp);
-  }
-
-  marker_arr.markers.push_back(right_cones_interpolated_marker_);
-  marker_arr.markers.push_back(left_cones_interpolated_marker_);
-
-  /* update cone markers */
-  for(const auto &cone : left_cones_)
-  {
-    temp.x = cone(0);
-    temp.y = cone(1);
-
-    left_cones_marker_.points.push_back(temp);
-  }
-
-  for(const auto &cone : right_cones_)
-  {
-    temp.x = cone(0);
-    temp.y = cone(1);
-
-    right_cones_marker_.points.push_back(temp);
-  }
-
-  marker_arr.markers.push_back(right_cones_marker_);
-  marker_arr.markers.push_back(left_cones_marker_);
-
-  /* update start and finish markers */
-  temp.x = right_cones_[0](0);
-  temp.y = right_cones_[0](1);
-  start_marker_.points.push_back(temp);
-  temp.x = left_cones_[0](0);
-  temp.y = left_cones_[0](1);
-  start_marker_.points.push_back(temp);
-  marker_arr.markers.push_back(start_marker_);
-
-  temp.x = right_cones_[right_cones_.size()-1](0);
-  temp.y = right_cones_[right_cones_.size()-1](1);
-  finish_marker_.points.push_back(temp);
-  temp.x = left_cones_[left_cones_.size()-1](0);
-  temp.y = left_cones_[left_cones_.size()-1](1);
-  finish_marker_.points.push_back(temp);
-  marker_arr.markers.push_back(finish_marker_);
-
-  boundaries_vis_pub_.publish(marker_arr);
-}
-
-/**
- * @brief Publishing message for RRT data.
- * @return
- */
-void PathPlanning::visualizeRRTPoints()
-{
-  static visualization_msgs::MarkerArray rrt_markers;
-  const auto nodes = rrt_star_obj_.getNodes();
-  const auto path = rrt_star_obj_.getPath().points;
-  
-  /* reinit markers */
-  deleteMarkers(rrt_markers, rrt_vis_pub_);
-  rrt_nodes_marker_.points.clear();
-  rrt_nodes_marker_.points.reserve(nodes.size());
-  rrt_trajectory_marker_.points.clear();
-  rrt_trajectory_marker_.points.reserve(path.size());
-
-  geometry_msgs::Point point_vis;
-
-  /* update RRT nodes markers */
-  for(const auto &node : nodes)
-  {
-    point_vis.x = node->position(0);
-    point_vis.y = node->position(1);
-    rrt_nodes_marker_.points.push_back(point_vis);	
-  }
-
-  rrt_markers.markers.push_back(rrt_nodes_marker_);
- 
-  /* update RRT trajectory markers */
-  for(const auto &path_it : path)
-  {
-    point_vis.x = path_it.x;
-    point_vis.y = path_it.y;
-    rrt_trajectory_marker_.points.push_back(point_vis);
-  }
-
-  rrt_markers.markers.push_back(rrt_trajectory_marker_);
-  rrt_vis_pub_.publish(rrt_markers);
-}
-
-void PathPlanning::deleteMarkers(visualization_msgs::MarkerArray& marker_array,
-                                const ros::Publisher& publisher) const
-{
-  marker_array.markers.clear();
-  visualization_msgs::Marker marker;
-
-  marker.id = 0;
-  marker.action = marker.DELETEALL;
-  marker_array.markers.emplace_back(marker);
-
-  publisher.publish(marker_array);
-}
-#endif /* SGT_VISUALIZATION */

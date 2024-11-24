@@ -3,7 +3,7 @@
 /* Authors: Juraj Krasňanský, Patrik Knaperek
 /*****************************************************/
 
-#include "path_planning_synch.h"
+#include "path_planning_ros.h"
 //#include "../include/path_planning_disciplines.h"
 
 int main(int argc, char** argv)
@@ -11,7 +11,7 @@ int main(int argc, char** argv)
   ros::init(argc, argv, "path_planning");
   ros::NodeHandle handle;
 
-  PathPlanningSynch synch_obj(handle);
+  PathPlanningROS ros_obj(handle);
 
   //if(/*arg from launchfile*/true)
   //{

@@ -5,21 +5,12 @@
 
 #include "../include/rrt_star.h"
 
-RRTStar::RRTStar(ros::NodeHandle& handle)
-{
-  Utils::loadParam(handle, "/rrt_conf/car_width", &conf_.car_width);
-  Utils::loadParam(handle, "/rrt_conf/node_step_size", &conf_.node_step_size);
-  conf_.neighbor_radius = 5 * conf_.node_step_size;
-  Utils::loadParam(handle, "/rrt_conf/max_angle", &conf_.max_angle);
-  Utils::loadParam(handle, "/rrt_conf/max_iter", &conf_.max_iter);
-};
-
 /**
  * @brief Initialization of whole object.
  * @param outside_cones - reference for world size computing
  * @param inside_cones
  */
-void RRTStar::init(const std::vector<Eigen::Vector2f> &outside_cones, const std::vector<Eigen::Vector2f> &inside_cones)
+void RRTStar::init(const Points &outside_cones, const Points &inside_cones)
 {
 	out_cones_ = outside_cones;
   in_cones_ = inside_cones;
@@ -149,7 +140,7 @@ const sgtdv_msgs::Point2DArr RRTStar::getPath() const
  * @brief Initialize root node of RRT*.
  * @param start_pos Position of the root node.
  */
-void RRTStar::initializeRootNode(const Eigen::Ref<const Eigen::Vector2f>& start_pos)
+void RRTStar::initializeRootNode(const Eigen::Vector2f& start_pos)
 {
   root_ = std::make_shared<Node>(start_pos);
   nodes_.push_back(root_);
@@ -161,7 +152,7 @@ void RRTStar::initializeRootNode(const Eigen::Ref<const Eigen::Vector2f>& start_
  * @param start_cone_index
  * @param end_cone_index
  */
-void RRTStar::setWorldSize(const std::vector<Eigen::Vector2f> &cones)
+void RRTStar::setWorldSize(const Points &cones)
 {
   world_x_.min = std::numeric_limits<float>::max();
   world_x_.max = std::numeric_limits<float>::lowest();
@@ -203,14 +194,14 @@ bool RRTStar::getRandNodePos(Eigen::Vector2f *point) const
  * @param q
  * @return
  */
-float RRTStar::computeDistance(const Eigen::Ref<const Eigen::Vector2f>& p, 
-                                const Eigen::Ref<const Eigen::Vector2f>& q) const
+float RRTStar::computeDistance(const Eigen::Vector2f& p, 
+                                const Eigen::Vector2f& q) const
 {
   return Eigen::Vector2f(p - q).norm();
 }
 
-float RRTStar::computeOrientation(const Eigen::Ref<const Eigen::Vector2f>& p_from,
-                                  const Eigen::Ref<const Eigen::Vector2f>& p_to) const
+float RRTStar::computeOrientation(const Eigen::Vector2f& p_from,
+                                  const Eigen::Vector2f& p_to) const
 {
   return std::atan2((p_to - p_from)(1), (p_to - p_from)(0));
 }
@@ -220,7 +211,7 @@ float RRTStar::computeOrientation(const Eigen::Ref<const Eigen::Vector2f>& p_fro
  * @param point
  * @return
  */
-RRTStar::Node::Ptr RRTStar::findNearestNode(const Eigen::Ref<const Eigen::Vector2f>& point) const
+RRTStar::Node::Ptr RRTStar::findNearestNode(const Eigen::Vector2f& point) const
 {
   float min_dist = std::numeric_limits<float>::max();
   Node::Ptr closest(nullptr);
@@ -287,7 +278,7 @@ double RRTStar::pathCost(const Node &q_from, const Node &q_to) const
   return distance;
 }
 
-float RRTStar::computeAngleDiff(const Node &q_from, const Eigen::Ref<const Eigen::Vector2f>& p_to) const
+float RRTStar::computeAngleDiff(const Node &q_from, const Eigen::Vector2f& p_to) const
 {
   float angle_diff = computeOrientation(q_from.position, p_to) - q_from.orientation;
   
@@ -319,7 +310,7 @@ void RRTStar::add(const double cost, const Node::Ptr &q_nearest, const Node::Ptr
  * @param target_point
  * @return
  */
-bool RRTStar::isOnTrack(const Eigen::Ref<const Eigen::Vector2f>& target_point) const
+bool RRTStar::isOnTrack(const Eigen::Vector2f& target_point) const
 {
   bool c(false);
   int i, j = 0;

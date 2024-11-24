@@ -5,16 +5,9 @@
 
 #pragma once
 
-/* ROS */
-#include <ros/ros.h>
-#include <visualization_msgs/Marker.h>
-#include <visualization_msgs/MarkerArray.h>
-
 /* SGT */
-#include "messages.h"
 //#include "path_planning_disciplines.h"
-#include <sgtdv_msgs/Point2DArr.h>
-#include <sgtdv_msgs/Float32Srv.h>
+#include <sgtdv_msgs/PathPlanningMsg.h>
 #include "SGT_Macros.h"
 #include "rrt_star.h"
 
@@ -23,45 +16,58 @@ constexpr float BEZIER_RESOLUTION = 0.125;
 class PathPlanning
 { 
 public:
-  explicit PathPlanning(ros::NodeHandle& handle);
-  ~PathPlanning() = default;
-
-  void update(const PathPlanningMsg &msg);  
-  void fullMap() { full_map_ = true; };
-  //void setDiscipline(Discipline discipline);
-
-private:
-  bool rrtRun();
-  void sortCones(const PathPlanningMsg &msg);
-  std::vector<Eigen::Vector2f> 
-  linearInterpolation(const std::vector<Eigen::Vector2f>& points, const sgtdv_msgs::CarPose::ConstPtr& car_pose) const;
-  sgtdv_msgs::Point2DArr findMiddlePoints();
-
-#ifdef SGT_VISUALIZATION
-  void initPathBoundariesMarkers();
-  void initRRTPointsMarker();
-  void visualizeInterpolatedCones();
-  void visualizeRRTPoints();
-  void deleteMarkers(visualization_msgs::MarkerArray& marker_array,
-                    const ros::Publisher& publisher) const;
-#endif /* SGT_VISUALIZATION */
-
   struct Params
   {
     float ref_speed_slow;
     float ref_speed_fast;
   };
-    
-  ros::Publisher trajectory_pub_;
 
-#ifdef SGT_VISUALIZATION
-  ros::Publisher boundaries_vis_pub_;
-  ros::Publisher rrt_vis_pub_;
-#endif /* SGT_VISUALIZATION */
+public:
+  explicit PathPlanning();
+  ~PathPlanning() = default;
 
-#ifdef SGT_DEBUG_STATE
-  ros::Publisher vis_debug_publisher_;
-#endif
+  sgtdv_msgs::Point2DArr update(const sgtdv_msgs::PathPlanningMsg &msg);  
+  void fullMap() { full_map_ = true; };
+  //void setDiscipline(Discipline discipline);
+
+  /* Setters & Getters */
+
+  void setParams(const Params& params, const RRTStar::RRTconf rrt_conf)
+  {
+    params_ = params;
+    rrt_star_obj_.setConf(rrt_conf);
+  }
+
+  float getRefSpeed(void)
+  {
+    return ref_speed_;
+  };
+
+  std::pair<Points,Points> getCones(void) const
+  {
+    return std::pair<Points, Points>(left_cones_, right_cones_);
+  };
+
+  std::pair<Points,Points> getConesInterpolated(void) const
+  {
+    return std::pair<Points, Points>(left_cones_interpolated_, right_cones_interpolated_);
+  };
+
+  const std::vector<RRTStar::Node::Ptr> getRRTNodes(void) const
+  { 
+    return rrt_star_obj_.getNodes(); 
+  };
+  
+  const sgtdv_msgs::Point2DArr getRRTPath(void) const
+  {
+    return rrt_star_obj_.getPath();
+  }
+
+private:
+  bool rrtRun();
+  void sortCones(const sgtdv_msgs::PathPlanningMsg &msg);
+  Points linearInterpolation(const Points& points, const sgtdv_msgs::CarPose& car_pose) const;
+  sgtdv_msgs::Point2DArr findMiddlePoints();    
   
   RRTStar rrt_star_obj_;
   Params params_;
@@ -69,18 +75,12 @@ private:
   float timer_avg_;
   int timer_avg_count_;
 
-  sgtdv_msgs::Float32Srv set_speed_msg_;
   bool once_;
   bool full_map_;
 
-  std::vector<Eigen::Vector2f> left_cones_, left_cones_interpolated_, right_cones_, 
-                              right_cones_interpolated_, middle_line_points_;
-  //PathPlanningDiscipline *path_planning_discipline_obj = nullptr;
+  float ref_speed_;
 
-#ifdef SGT_VISUALIZATION
-  visualization_msgs::Marker left_cones_interpolated_marker_, right_cones_interpolated_marker_,
-                              left_cones_marker_, right_cones_marker_,
-                              start_marker_, finish_marker_,
-                              rrt_nodes_marker_, rrt_trajectory_marker_;
-#endif /* SGT_VISUALIZATION */
+  Points left_cones_, left_cones_interpolated_, right_cones_, 
+        right_cones_interpolated_, middle_line_points_;
+  //PathPlanningDiscipline *path_planning_discipline_obj = nullptr;
 };

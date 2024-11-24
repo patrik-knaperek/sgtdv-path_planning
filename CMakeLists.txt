@@ -32,8 +32,7 @@ add_executable(
   ${PROJECT_NAME} 
   src/path_planning_node.cpp 
   src/path_planning.cpp 
-  src/path_planning_synch.cpp 
-  src/path_planning_disciplines.cpp
+  src/path_planning_ros.cpp 
   src/rrt_star.cpp
 )
 
