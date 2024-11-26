@@ -2,7 +2,7 @@
   <node
     pkg="path_planning"
     type="path_planning"
-    name="pathPlanning" 
+    name="path_planning" 
     output="screen"
   />
   <!--<node
@@ -14,6 +14,6 @@
 
   <node pkg="rosservice" 
     type="rosservice" 
-    name="set_fusion_log_level" 
-    args="call /fusion/set_logger_level 'ros.pathPlanning' 'info'" />
+    name="set_path_planning_log_level" 
+    args="call /path_planning/set_logger_level 'ros.path_planning' 'info'" />
 </launch> 

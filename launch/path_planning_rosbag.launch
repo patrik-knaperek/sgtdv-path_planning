@@ -2,7 +2,7 @@
   <node
     pkg="path_planning"
     type="path_planning"
-    name="pathPlanning" 
+    name="path_planning" 
     output="screen"
   />
   <node
