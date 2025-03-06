@@ -8,6 +8,7 @@
 /* SGT */
 //#include "path_planning_disciplines.h"
 #include <sgtdv_msgs/PathPlanningMsg.h>
+#include <sgtdv_msgs/Trajectory.h>
 #include "SGT_Macros.h"
 #include "rrt_star.h"
 
@@ -26,7 +27,7 @@ public:
   explicit PathPlanning();
   ~PathPlanning() = default;
 
-  sgtdv_msgs::Point2DArr update(const sgtdv_msgs::PathPlanningMsg &msg);  
+  sgtdv_msgs::Trajectory update(const sgtdv_msgs::PathPlanningMsg &msg);  
   void fullMap() { full_map_ = true; };
   //void setDiscipline(Discipline discipline);
 
@@ -38,9 +39,9 @@ public:
     rrt_star_obj_.setConf(rrt_conf);
   }
 
-  float getRefSpeed(void)
+  void setRefSpeed(const float ref_speed)
   {
-    return ref_speed_;
+    params_.ref_speed_fast = params_.ref_speed_slow = ref_speed;
   };
 
   std::pair<Points,Points> getCones(void) const

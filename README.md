@@ -12,7 +12,7 @@ ___
 ## Overview
 
 The implementation consists of 2 algorithms:
-* **reactive navigation** (first lap, unknown map) - **Lagrange interpolating polynomial** method is used. The same amount of cones on both side of track is asumed, which isn't however guaranteed by the rules.
+* **reactive navigation** (first lap, unknown map) - **Lagrange interpolating polynomial** method is used. The same amount of cones on both side of track is assumed, which isn't however guaranteed by the rules.
 * **global navigation** (known map) - **RRT\*** algorithm finds the shortest path through the track, considering given constraints.
 
 *Note: If only global navigation is being tested, set the `full_map_` initial value to `true`.*
@@ -33,22 +33,22 @@ PathPlanning::PathPlanning(ros::NodeHandle& handle) :
 ### ROS Interface
 
 **Subscribed topics**
-* `/slam/map`[[`sgtdv_msgs/ConeArr`](../sgtdv_msgs/msg/ConeArr.msg)] : landmark coordinates from SLAM state vector in `map` frame
-* `/slam/pose` [[`sgtdv_msgs/CarPose`](../sgtdv_msgs/msg/CarPose.msg)] : car pose from SLAM state vector in `map` frame
-* `/slam/loop_closure` [[`std_msgs/Empty`](/opt/ros/noetic/share/std_msgs/msg/Empty.msg)] : signalization from SLAM allowing to switch from local to global navigation
+* `/slam/map`[[`sgtdv_msgs/ConeArr`](/src/sgtdv_msgs/msg/ConeArr.msg)] : landmark coordinates from SLAM state vector in `map` frame
+* `/slam/pose` [[`sgtdv_msgs/CarPose`](/src/sgtdv_msgs/msg/CarPose.msg)] : car pose from SLAM state vector in `map` frame
+* `/slam/loop_closure` [`std_msgs/Empty`] : signalization from SLAM allowing to switch from local to global navigation
 
 **Published topics**
-* `/path_planning/trajectory` [[`sgtdv_msgs/Point2DArr`](../sgtdv_msgs/msg/Point2DArr.msg)] : path 2D coordinates in `map` frame
+* `/path_planning/trajectory` [[`sgtdv_msgs/Trajectory`](/src/sgtdv_msgs/msg/Trajectory.msg)] : 2D path coordinates in `map` frame alongside reference speed values respectively
 
 *If `SGT_VISUALIZE` macro enabled*
-* `/path_planning/visualize/track_boundaries` [[`visualization_msgs/MarkerArray`](/opt/ros/noetic/share/visualization_msgs/msg/MarkerArray.msg)] : estimated track boundaries visualization (cones, interpolated cones, trajectory start cones, trajectory finish cones)
-* `/path_planning/visualize/rrt` [[`visualization_msgs/MarkerArray`](/opt/ros/noetic/share/visualization_msgs/msg/MarkerArray.msg)] : RRT* data visualization (nodes, trajectory)
+* `/path_planning/visualize/track_boundaries` [`visualization_msgs/MarkerArray`] : estimated track boundaries visualization (cones, interpolated cones, trajectory start cones, trajectory finish cones)
+* `/path_planning/visualize/rrt` [`visualization_msgs/MarkerArray`] : RRT* data visualization (nodes, trajectory)
 
 *If `SGT_DEBUG_STATE` macro enabled*
-* `/path_planning/debug_state` [[`sgtdv_msgs/DebugState](../sgtdv_msgs/msg/DebugState.msg)] : node lifecycle information (active/inactive, number of trajectory points)
+* `/path_planning/debug_state` [[`sgtdv_msgs/DebugState`](/src/sgtdv_msgs/msg/DebugState.msg)] : node lifecycle information (active/inactive, number of trajectory points)
 
-**Service clients**
-* `/path_tracking/set_speed` [[`sgtdv_msgs/FLoat32Srv`](../sgtdv_msgs/srv/Float32Srv.srv)] : set reference speed for `path_tracking` node
+**Service servers**
+* `/path_planning/set_speed` [[`sgtdv_msgs/FLoat32Srv`](/src/sgtdv_msgs/srv/Float32Srv.srv)] : set reference speed manually
 
 **Parameters**
 * `/ref_speed/slow` : [m/s] reference speed for reactive navigation
@@ -59,10 +59,10 @@ PathPlanning::PathPlanning(ros::NodeHandle& handle) :
 * `/rrt_conf/max_angle` : [rad] maximum angle between parent and child node
 
 ### Related packages
-* [`slam`](../slam/README.md) : `/slam/map`, `/slam/pose` and `/slam/loop_closure` publisher
-* [`mapper`](../mapper/README.md) : temporary substitution for `slam` package
-* [`slam_si`](../simulation_interface/slam_si/README.md) : (FSSIM setup) `/slam/map`, `/slam/pose` and `/slam/loop_closure` publisher
-* [`path_tracking`](../path_tracking/README.md) : `/path_planning/trajectory` subscriber and `/path_tracking/set_speed` server
+* [`slam`](/src/slam/README.md) : `/slam/map`, `/slam/pose` and `/slam/loop_closure` publisher
+* [`mapper`](/src/mapper/README.md) : temporary substitution for `slam` package
+* [`slam_si`](/src/simulation_interface/slam_si/README.md) : (FSSIM setup) `/slam/map`, `/slam/pose` and `/slam/loop_closure` publisher
+* [`path_tracking`](/src/path_tracking/README.md) : `/path_planning/trajectory` subscriber and `/path_tracking/set_speed` server
 
 ## Compilation
 * standalone
@@ -96,7 +96,7 @@ $ roslaunch path_planning path_planning.launch
 ```sh
 $ roslaunch path_planning path_planning_rosbag.launch bag_name:=YOUR_BAG_FILE
 ```
-* FSSIM config (the `slam_si` package has to be built first) (check [FSSIM testing](../../doc/FSSIM_testing.md) manual for more info)
+* FSSIM config (the `slam_si` package has to be built first) (check [FSSIM testing](/doc/FSSIM_testing.md) manual for more info)
 ```sh
 $ roslaunch path_planning path_planning_sim.launch
 ```

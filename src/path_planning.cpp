@@ -31,11 +31,11 @@ PathPlanning::PathPlanning() :
  * @brief Main function in class.
  * @param incoming_ros_msg
  */
-sgtdv_msgs::Point2DArr PathPlanning::update(const sgtdv_msgs::PathPlanningMsg &msg)
+sgtdv_msgs::Trajectory PathPlanning::update(const sgtdv_msgs::PathPlanningMsg &msg)
 {
 //m_publisher.publish(m_pathPlanningDiscipline->Do(msg));
   
-  sgtdv_msgs::Point2DArr trajectory;
+  sgtdv_msgs::Trajectory trajectory;
 
   sortCones(msg);
   
@@ -52,13 +52,24 @@ sgtdv_msgs::Point2DArr PathPlanning::update(const sgtdv_msgs::PathPlanningMsg &m
 
     if(rrt_completed)
     {
-      trajectory = rrt_star_obj_.getPath();
-      ref_speed_ = params_.ref_speed_fast;
+      
+      trajectory.path = rrt_star_obj_.getPath();
+
+      trajectory.ref_speed.reserve(trajectory.path.points.size());
+      for (int i = 0; i < trajectory.path.points.size(); i++)
+      {
+        trajectory.ref_speed.push_back(params_.ref_speed_fast);
+      }
     }
     else
     {
-      trajectory = findMiddlePoints();
-      ref_speed_ = params_.ref_speed_slow;
+      trajectory.path = findMiddlePoints();
+
+      trajectory.ref_speed.reserve(trajectory.path.points.size());
+      for (int i = 0; i < trajectory.path.points.size(); i++)
+      {
+        trajectory.ref_speed.push_back(params_.ref_speed_slow);
+      }
     }
   }
   else

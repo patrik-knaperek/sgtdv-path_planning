@@ -3,14 +3,17 @@
 /* Authors: Juraj Krasňanský, Samuel Mazur, Patrik Knaperek
 /*****************************************************/
 
+/* SGT-DV */
 #include <sgtdv_msgs/DebugState.h>
 #include <sgtdv_msgs/Float32Srv.h>
 
+/* Header */
 #include "path_planning_ros.h"
 
 PathPlanningROS::PathPlanningROS(ros::NodeHandle& nh) :
   /* ROS interface init */
-  trajectory_pub_(nh.advertise<sgtdv_msgs::Point2DArr>("path_planning/trajectory", 1)),
+  trajectory_pub_(nh.advertise<sgtdv_msgs::Trajectory>("path_planning/trajectory", 1)),
+  set_speed_server_(nh.advertiseService("path_planning/set_speed", &PathPlanningROS::setSpeedCallback, this)),
 #ifdef SGT_VISUALIZATION
   boundaries_vis_pub_(nh.advertise<visualization_msgs::MarkerArray>("path_planning/visualize/track_boundaries", 1)),
   rrt_vis_pub_(nh.advertise<visualization_msgs::MarkerArray>("path_planning/visualize/rrt", 1)),
@@ -73,17 +76,8 @@ void PathPlanningROS::update()
 
     const auto trajectory = path_planning_obj_.update(path_planning_msg_);
 
-    if(trajectory.points.size() > 0)
-    {
-      // when used with path_tracking
-      sgtdv_msgs::Float32Srv set_speed_msg;
-      set_speed_msg.request.data = path_planning_obj_.getRefSpeed();
-
-      if(!ros::service::call("path_tracking/set_speed", set_speed_msg))
-      {
-        ROS_WARN_ONCE("Service \"path_tracking/set_speed\" failed");
-      }
-      
+    if(trajectory.path.points.size() > 0)
+    { 
       trajectory_pub_.publish(trajectory);
 
     #ifdef SGT_VISUALIZATION
@@ -95,7 +89,7 @@ void PathPlanningROS::update()
   #ifdef SGT_DEBUG_STATE
     state.stamp = ros::Time::now();
     state.working_state = 0;
-    state.num_of_cones = trajectory.points.size();
+    state.num_of_cones = trajectory.path.points.size();
     vis_debug_publisher_.publish(state);
   #endif // SGT_DEBUG_STATE
   }
@@ -135,6 +129,14 @@ void PathPlanningROS::poseCallback(const sgtdv_msgs::CarPose::ConstPtr &msg)
   path_planning_msg_.car_pose = *msg;
   pose_received_ = true;
   update();
+}
+
+bool PathPlanningROS::setSpeedCallback(sgtdv_msgs::Float32Srv::Request &req, sgtdv_msgs::Float32Srv::Response &res)
+{
+  path_planning_obj_.setRefSpeed(req.data);
+
+  ROS_INFO_STREAM("Setting reference speed manually: " << req.data);
+  return true;
 }
 
 /*void PathPlanningSynch::SetDiscipline(Discipline discipline)

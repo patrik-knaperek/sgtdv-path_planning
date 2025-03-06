@@ -18,7 +18,7 @@
 //#include "../include/path_planning_disciplines.h"
 #include <sgtdv_msgs/ConeArr.h>
 #include <sgtdv_msgs/CarPose.h>
-
+#include <sgtdv_msgs/Float32Srv.h>
 
 class PathPlanningROS
 {
@@ -34,6 +34,8 @@ private:
   void mapCallback(const sgtdv_msgs::ConeArr::ConstPtr &msg);
   void poseCallback(const sgtdv_msgs::CarPose::ConstPtr &msg);
   void loopClosureCallback(const std_msgs::Empty::ConstPtr &msg);
+
+  bool setSpeedCallback(sgtdv_msgs::Float32Srv::Request &req, sgtdv_msgs::Float32Srv::Response &res);
   
   //void setDiscipline(Discipline discipline);
 
@@ -47,6 +49,7 @@ private:
 #endif /* SGT_VISUALIZATION */
 
   ros::Publisher trajectory_pub_;
+  ros::ServiceServer set_speed_server_;
 
 #ifdef SGT_VISUALIZATION
   ros::Publisher boundaries_vis_pub_;
@@ -64,7 +67,7 @@ private:
   ros::Subscriber map_sub_;
   ros::Subscriber pose_sub_;
   ros::Subscriber loop_close_sub_;
-
+  
   PathPlanning path_planning_obj_;   
   sgtdv_msgs::PathPlanningMsg path_planning_msg_;
 
